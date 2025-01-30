@@ -1,0 +1,138 @@
+﻿@page "/mathgame"
+@using System.Timers
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<h3>Welcome to the Math Game, Akseli Team and Andree!</h3>
+
+<p>The numbers will appear with a delay of <b>@(_gameSettings.DelayInMilliseconds / 1000.00)</b> seconds.</p>
+
+@if (IsGameActive)
+{
+    <h4>Number: @CurrentNumber</h4>
+    <p>Input the final sum:</p>
+    <input @bind="UserInput" type="text" disabled />
+    <div class="keyboard">
+        @for (int i = 0; i <= 9; i++)
+        {
+            var capturedI = i;
+            <button @onclick="() => OnScreenKeyPress(capturedI)">@capturedI</button>
+        }
+    </div>
+    <button @onclick="SubmitAnswer">Submit</button>
+    <p>@Message</p>
+}
+else
+{
+    <h2>Game settings</h2>
+    <label for="delay">Delay in milliseconds:</label>
+    <input id="delay" type="number" @bind="_gameSettings.DelayInMilliseconds" />
+    <label for="digits">Digits to show:</label>
+    <input id="digits" type="number" @bind="_gameSettings.DigitsToShow" />
+    <label for="numbers">Numbers to sum:</label>
+    <input id="numbers" type="number" @bind="_gameSettings.NumbersToSum" />
+    
+    <button @onclick="StartGame">Start Game</button>
+}
+
+@if (playBeepToggle)
+{
+<audio autoplay controls><source src="/short-beep-tone-47916.mp3" /></audio>
+}
+
+
+@code {
+    private int CurrentNumber;
+    private int TotalSum;
+    private string UserInput = string.Empty;
+    private string Message = "";
+    private bool IsGameActive = false;
+    private Random Random = new Random();
+    private Timer GameTimer;
+    private int NumbersShown = 0;
+    
+    private GameSettings _gameSettings { get; set; } = new GameSettings();
+
+    private async Task StartGame()
+    {
+        Console.WriteLine("Game started with settings:");
+        Console.WriteLine($"Delay: {_gameSettings.DelayInMilliseconds}");
+        Console.WriteLine($"Digits: {_gameSettings.DigitsToShow}");
+        Console.WriteLine($"Numbers: {_gameSettings.NumbersToSum}");
+        
+        IsGameActive = true;
+        TotalSum = 0;
+        NumbersShown = 0;
+        Message = "";
+        UserInput = string.Empty;
+
+        while (NumbersShown < _gameSettings.NumbersToSum)
+        {
+            int min = -TotalSum;
+            
+            int max = (int)Math.Pow(10, _gameSettings.DigitsToShow) - 1 - TotalSum;
+            Console.WriteLine($"Min: {min}, Max: {max}");
+            CurrentNumber = Random.Next(min, max);
+
+            TotalSum += CurrentNumber;
+
+            StateHasChanged(); // Refresh UI
+            PlayBeep(1000, 200); // Beep sound
+
+            NumbersShown++;
+            await Task.Delay(_gameSettings.DelayInMilliseconds);
+        }
+
+        Message = "Now, it's your turn to calculate the final sum!";
+    }
+
+    private void SubmitAnswer()
+    {
+        if (int.TryParse(UserInput, out int userSum) && userSum == TotalSum)
+        {
+            Message = "Correct! Well done!";
+            _gameSettings.DelayInMilliseconds = _gameSettings.DelayInMilliseconds * 9 / 10; // Decrease delay by 10%
+        }
+        else
+        {
+            Message = $"Wrong. The correct sum is: {TotalSum}";
+            _gameSettings.DelayInMilliseconds = _gameSettings.DelayInMilliseconds * 10 / 9; // Increase delay by 10%
+        }
+
+        IsGameActive = false;
+    }
+
+    public bool playBeepToggle { get; set; }
+    private void PlayBeep(int frequency, int duration)
+    {
+        // turn playBeepToggle on and off to trigger the audio element
+        playBeepToggle = !playBeepToggle;
+        // toggle again in 200ms
+        Task.Delay(200).ContinueWith(_ => playBeepToggle = !playBeepToggle);
+        
+        // Console.Beep isn't available in Blazor.
+        // To implement sounds, integrate with JavaScript Audio API.
+        // JS.InvokeVoidAsync("playBeep", frequency, duration);
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            SubmitAnswer();
+        }
+    }
+
+    private void OnScreenKeyPress(int number)
+    {
+        UserInput += number.ToString();
+    }
+    
+    public class GameSettings
+    {
+        public int DelayInMilliseconds { get; set; } = 1200;
+        public int DigitsToShow { get; set; } = 1;
+        public int NumbersToSum { get; set; } = 10;
+        
+    }
+}
