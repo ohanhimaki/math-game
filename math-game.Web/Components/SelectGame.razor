@@ -1,0 +1,36 @@
+﻿<h3>SelectGame</h3>
+
+<MudGrid>
+    
+    <MudItem xs="6">
+
+        <MudInput Variant="Variant.Outlined" Label="Kesto millisekunneissa " @bind-Value="GameSettings.DelayInMilliseconds"/>
+    </MudItem>
+    <MudItem xs="6">
+
+        <MudCheckBox Label="Korota onnistuessa" @bind-Value="GameSettings.DelayLevelScaleOn"/>
+    </MudItem>
+    <MudItem xs="6">
+
+        <MudInput Variant="Variant.Outlined" Label="Kuinka pitkiä lukuja?" @bind-Value="GameSettings.DigitsToShow"/>
+    </MudItem>
+    <MudItem xs="6">
+
+        <MudCheckBox Label="Korota onnistuessa" @bind-Value="GameSettings.DigitsLevelScaleOn"/>
+    </MudItem>
+    <MudItem xs="6">
+
+        <MudInput Variant="Variant.Outlined"  Label="Montako lukua" @bind-Value="GameSettings.NumbersToSum"/>
+    </MudItem>
+    <MudItem xs="6">
+
+        <MudCheckBox Label="Korota onnistuessa" @bind-Value="GameSettings.NumbersLevelScaleOn"/>
+    </MudItem>
+
+</MudGrid>
+
+@code {
+    [Parameter]
+    public GameSettings GameSettings { get; set; }
+    
+}

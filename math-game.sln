@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "math-game", "math-game\math
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorApp1", "BlazorApp1\BlazorApp1.csproj", "{DE0846EF-9EB4-482C-9AC8-43E77CB5080A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "math-game.Web", "math-game.Web\math-game.Web.csproj", "{76798404-0093-472A-BA69-B6A4F53B8536}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{DE0846EF-9EB4-482C-9AC8-43E77CB5080A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE0846EF-9EB4-482C-9AC8-43E77CB5080A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DE0846EF-9EB4-482C-9AC8-43E77CB5080A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{76798404-0093-472A-BA69-B6A4F53B8536}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76798404-0093-472A-BA69-B6A4F53B8536}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76798404-0093-472A-BA69-B6A4F53B8536}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76798404-0093-472A-BA69-B6A4F53B8536}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -1,0 +1,166 @@
+﻿@page "/"
+@using System.Timers
+@inject IJSRuntime JS
+
+
+<p>The numbers will appear with a delay of <b>@(_gameSettings.DelayInMilliseconds / 1000.00)</b> seconds.</p>
+
+@if (_activeGame != null)
+{
+    if (_activeRound == null)
+    {
+        <MudButton Variant="Variant.Filled" OnClick="StartRound">Aloita kierros</MudButton>
+        @_activeGame.RuleDescriptionShort
+        
+        if(_activeGame.Rounds.Count > 0)
+        {
+            var previousRound = _activeGame.Rounds.Last();
+            var prevAnswer = previousRound.IsCorrect?? false ? "Oikein" : "Väärin";
+            <MudText>Edellisen kierroksen vastaus oli @prevAnswer  </MudText>
+        }
+        else
+        {
+            <p>Ei vielä pelattuja kierroksia</p>
+        }
+        
+    }
+    else
+    {
+        <MudText Typo="Typo.h1">@_activeRound.Numbers.Last()</MudText>
+        <p>Anna vastaus:</p>
+        <input @bind="UserInput" type="text" disabled/>
+
+        <MudGrid Justify="Justify.Center">
+
+            @for (int i = 0; i <= 9; i++)
+            {
+                var capturedI = (i + 1) % 10;
+                <MudItem xs="4">
+                    <MudButton Variant="Variant.Filled" OnClick="() => OnScreenKeyPress(capturedI)"> @capturedI</MudButton>
+
+                </MudItem>
+            }
+        </MudGrid>
+        <button @onclick="SubmitAnswer">Lähetä</button>
+    }
+}
+else
+{
+    <h3>Welcome to the Math Game!</h3>
+    <SelectGame GameSettings="@_gameSettings"/>
+
+    <button @onclick="StartGame">Aloita peli</button>
+}
+
+@if (playBeepToggle)
+{
+    <audio autoplay controls>
+        <source src="/short-beep-tone-47916.mp3"/>
+    </audio>
+}
+
+
+@code {
+
+    private string UserInput = string.Empty;
+    private Random Random = new Random();
+    private Timer GameTimer;
+
+    private GameSettings _gameSettings { get; set; } = new GameSettings();
+
+    private Game? _activeGame;
+    private Round? _activeRound;
+
+    private async Task StartGame()
+    {
+        _activeGame = new Game(_gameSettings);
+    }
+
+    private void SubmitAnswer()
+    {
+        if (int.TryParse(UserInput, out int userSum) )
+        {
+            _activeRound.GiveAnswer(userSum);
+            _activeGame.AddRound(_activeRound);
+        }
+        else
+        {
+            _activeRound.GiveAnswer(-1);
+            _activeGame.AddRound(_activeRound);
+        }
+        _activeRound = null;
+        UserInput = string.Empty;
+        
+
+        // if (int.TryParse(UserInput, out int userSum) && userSum ==_activeRound.TotalSum)
+        // {
+        //     Message = "Correct! Well done!";
+        //     _activeRound.GiveAnswer(userSum);
+        //     _activeGame.AddRound(_activeRound);
+        //     _gameSettings.DelayInMilliseconds = _gameSettings.DelayInMilliseconds * 9 / 10; // Decrease delay by 10%
+        // }
+        // else
+        // {
+        //     Message = $"Wrong. The correct sum is: {_activeRound.TotalSum}";
+        //     _gameSettings.DelayInMilliseconds = _gameSettings.DelayInMilliseconds * 10 / 9; // Increase delay by 10%
+        // }
+        
+
+        
+    }
+
+    public bool playBeepToggle { get; set; }
+
+    private void PlayBeep(int frequency, int duration)
+    {
+// turn playBeepToggle on and off to trigger the audio element
+        playBeepToggle = !playBeepToggle;
+// toggle again in 200ms
+        Task.Delay(200).ContinueWith(_ => playBeepToggle = !playBeepToggle);
+
+// Console.Beep isn't available in Blazor.
+// To implement sounds, integrate with JavaScript Audio API.
+// JS.InvokeVoidAsync("playBeep", frequency, duration);
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            SubmitAnswer();
+        }
+    }
+
+    private void OnScreenKeyPress(int number)
+    {
+        UserInput += number.ToString();
+        if (UserInput.Length == _gameSettings.DigitsToShow)
+        {
+            SubmitAnswer();
+        }
+    }
+
+    private async Task StartRound(MouseEventArgs obj)
+    {
+        _activeRound = new Round(_activeGame);
+        // TotalSum = 0;
+        // NumbersShown = 0;
+        UserInput = string.Empty;
+
+        while (_activeRound.Numbers.Count < _activeGame.NumbersToSum)
+        {
+            int min = -_activeRound.TotalSum;
+
+            int max = (int)Math.Pow(10, _activeGame.DigitsToShow) - 1 -  _activeRound.TotalSum;
+            _activeRound.Numbers.Add(Random.Next(min, max));
+
+            StateHasChanged(); // Refresh UI
+            PlayBeep(1000, 200); // Beep sound
+
+            await Task.Delay(_gameSettings.DelayInMilliseconds);
+        }
+        _activeRound.LastNumberShownTime = DateTime.Now;
+
+    }
+
+}
