@@ -1,5 +1,8 @@
 ﻿@page "/"
 
+
+<MudContainer Class="mt-16" MaxWidth="MaxWidth.Medium">
+    
 @if (_activeGame != null)
 {
     if (_activeRound == null)
@@ -46,11 +49,17 @@
     }
     else
     {
-        <MudText Typo="Typo.h1">@(_activeRound.Numbers.Any() ? _activeRound.Numbers.Last() : "")</MudText>
-        
-        <MudProgressLinear Color="Color.Primary" Striped="true" Size="Size.Large" Value="_activeRound.Numbers.Count()" Max="_activeGame.NumbersToSum"  Class="my-7" />
-        <p>Anna vastaus:</p>
-        <input @bind="_userInput" type="text" disabled/>
+        <MudGrid Justify="Justify.Center">
+            <MudItem xs="12" >
+                <MudText Align="Align.Center" Typo="Typo.h1">@(_activeRound.Numbers.Any() ? _activeRound.Numbers.Last() : "")</MudText>
+                <MudProgressLinear Color="Color.Primary" Striped="true" Size="Size.Large" Value="_activeRound.Numbers.Count()" Max="_activeGame.NumbersToSum"  Class="my-7" />
+            </MudItem>
+            
+            <MudItem xs="12">
+                <MudInput Disabled Value="_userInput" Label="Vastaus" />
+            </MudItem>
+
+        </MudGrid>
 
         <MudGrid Justify="Justify.Center">
 
@@ -74,6 +83,7 @@ else
     <button @onclick="StartGame">Aloita peli</button>
 }
 
+</MudContainer>
 
 @code {
 

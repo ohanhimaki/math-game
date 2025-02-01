@@ -15,7 +15,7 @@
     public GameSettings Settings { get; set; } = new GameSettings();
 
     public List<Round> Rounds { get; set; } = new List<Round>();
-    public string RuleDescriptionShort => $"Laske yhteen {NumbersToSum} lukua \n joissa on {DigitsToShow} numeroa jokaisessa \n sinulla on {DelayInMilliseconds/1000.00} sekuntia aikaa numeroiden välillä";
+    public string RuleDescriptionShort => $"Laske yhteen {NumbersToSum} lukua joissa on {DigitsToShow} numeroa jokaisessa sinulla on {DelayInMilliseconds/1000.00} sekuntia aikaa numeroiden välillä";
 
     public void AddRound(Round activeRound)
     {
