@@ -23,6 +23,7 @@ jobs:
 
       - name: Publish Blazor WASM
         run: |
+            ls
             cd ./MathGame.web
             dotnet publish -c Release -o ../release
 
