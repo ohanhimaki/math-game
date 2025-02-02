@@ -25,7 +25,7 @@ jobs:
         run: |
             ls
             cd ./MathGame.Web
-            dotnet publish -c Release -o ../release
+            dotnet publish -c Release -o ../release /p:BasePath=/math-game.web/
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
