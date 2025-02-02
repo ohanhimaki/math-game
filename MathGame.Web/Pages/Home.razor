@@ -2,86 +2,88 @@
 
 
 <MudContainer Class="mt-16" MaxWidth="MaxWidth.Medium">
-    
-@if (_activeGame != null)
-{
-    if (_activeRound == null)
+
+    @if (_activeGame != null)
     {
-        <MudGrid>
-            @if(_activeGame.Rounds.Count > 0)
-            {
-                
-                var previousRound = _activeGame.Rounds.Last();
-                var prevAnswer = previousRound.IsCorrect?? false ? "Oikein" : "Väärin";
-                <MudItem>
-                    
-                    <MudText>Edellisen kierroksen vastaus oli @prevAnswer  </MudText>
-                    <MudText>Vastaukseen kului aikaa: @(previousRound.TimeTaken?.TotalMilliseconds/1000)</MudText>
-                    
-                    @if (previousRound.IsCorrect == false)
-                    {
-                        <MudText>Edellisen kierroksen oikea  summa oli @previousRound.TotalSum  </MudText>
-                        <MudText>Edellisen kierroksen vastaus oli @previousRound.Answer  </MudText>
+        if (_activeRound == null)
+        {
+            <MudGrid>
+                @if (_activeGame.Rounds.Count > 0)
+                {
+                    var previousRound = _activeGame.Rounds.Last();
+                    var prevAnswer = previousRound.IsCorrect ?? false ? "Oikein" : "Väärin";
+                    <MudItem>
+
+                        <MudText>Edellisen kierroksen vastaus oli @prevAnswer </MudText>
+                        <MudText>Vastaukseen kului aikaa: @(previousRound.TimeTaken?.TotalMilliseconds / 1000)</MudText>
+
+                        @if (previousRound.IsCorrect == false)
+                        {
+                            <MudText>Edellisen kierroksen oikea summa oli @previousRound.TotalSum </MudText>
+                            <MudText>Edellisen kierroksen vastaus oli @previousRound.Answer </MudText>
+                        }
+                    </MudItem>
+                }
+                <MudItem xs="12">
+                    <MudButton Variant="Variant.Filled" OnClick="StartRound">Aloita kierros</MudButton>
+                </MudItem>
+                <MudItem xs="12">
+                    @_activeGame.RuleDescriptionShort
+                </MudItem>
+
+                @if (_activeGame.Rounds.Count > 0)
+                {
+                    <MudItem xs="12">
+                        <MudText>Yhteensä kierroksia: @_activeGame.Rounds.Count</MudText>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudText>Yhteensä oikeita vastauksia: @_activeGame.Rounds.Count(x => x.IsCorrect == true)</MudText>
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+        else
+        {
+            <MudGrid Justify="Justify.Center">
+                <MudItem xs="12">
+                    @{
+                        string value = _numberFlashTime ? "+" : _activeRound.Numbers.Any() ? _activeRound.Numbers.Last().ToString() : "+";
+                        var proggressColor = _activeGame.NumbersToSum == _activeRound.Numbers.Count() ? Color.Success : Color.Primary;
+
+                        <MudText Align="Align.Center" Typo="Typo.h1">
+                            @value
+                        </MudText>
+                        <MudProgressLinear Color="@proggressColor" Striped="true" Size="Size.Large" Value="_activeRound.Numbers.Count()" Max="_activeGame.NumbersToSum" Class="my-7"/>
                     }
                 </MudItem>
-                
-            }
-            <MudItem xs="12">
-                <MudButton Variant="Variant.Filled" OnClick="StartRound">Aloita kierros</MudButton>
-            </MudItem>
-            <MudItem xs="12">
-                @_activeGame.RuleDescriptionShort
-            </MudItem>
-            
-            @if(_activeGame.Rounds.Count > 0)
-            {
+
                 <MudItem xs="12">
-                    <MudText>Yhteensä kierroksia: @_activeGame.Rounds.Count</MudText>
+                    <MudInput Disabled Value="_userInput" Label="Vastaus"/>
                 </MudItem>
-                <MudItem xs="12">
-                    <MudText>Yhteensä oikeita vastauksia: @_activeGame.Rounds.Count(x => x.IsCorrect == true)</MudText>
-                </MudItem>
-            }
-        </MudGrid>
-        
-        
-        
+
+            </MudGrid>
+
+            <MudGrid Justify="Justify.Center">
+
+                @for (int i = 0; i <= 9; i++)
+                {
+                    var capturedI = (i + 1) % 10;
+                    <MudItem xs="4">
+                        <MudButton Variant="Variant.Filled" OnClick="() => OnScreenKeyPress(capturedI)"> @capturedI</MudButton>
+
+                    </MudItem>
+                }
+            </MudGrid>
+            <button @onclick="SubmitAnswer">Lähetä</button>
+        }
     }
     else
     {
-        <MudGrid Justify="Justify.Center">
-            <MudItem xs="12" >
-                <MudText Align="Align.Center" Typo="Typo.h1">@(_activeRound.Numbers.Any() ? _activeRound.Numbers.Last() : "")</MudText>
-                <MudProgressLinear Color="Color.Primary" Striped="true" Size="Size.Large" Value="_activeRound.Numbers.Count()" Max="_activeGame.NumbersToSum"  Class="my-7" />
-            </MudItem>
-            
-            <MudItem xs="12">
-                <MudInput Disabled Value="_userInput" Label="Vastaus" />
-            </MudItem>
+        <h3>Welcome to the Math Game!</h3>
+        <SelectGame GameSettings="@_gameSettings"/>
 
-        </MudGrid>
-
-        <MudGrid Justify="Justify.Center">
-
-            @for (int i = 0; i <= 9; i++)
-            {
-                var capturedI = (i + 1) % 10;
-                <MudItem xs="4">
-                    <MudButton Variant="Variant.Filled" OnClick="() => OnScreenKeyPress(capturedI)"> @capturedI</MudButton>
-
-                </MudItem>
-            }
-        </MudGrid>
-        <button @onclick="SubmitAnswer">Lähetä</button>
+        <button @onclick="StartGame">Aloita peli</button>
     }
-}
-else
-{
-    <h3>Welcome to the Math Game!</h3>
-    <SelectGame GameSettings="@_gameSettings"/>
-
-    <button @onclick="StartGame">Aloita peli</button>
-}
 
 </MudContainer>
 
@@ -94,6 +96,7 @@ else
 
     private Game? _activeGame;
     private Round? _activeRound;
+    private bool _numberFlashTime;
 
     private async Task StartGame()
     {
@@ -102,7 +105,7 @@ else
 
     private void SubmitAnswer()
     {
-        if (int.TryParse(_userInput, out int userSum) )
+        if (int.TryParse(_userInput, out int userSum))
         {
             _activeRound.GiveAnswer(userSum);
             _activeGame.AddRound(_activeRound);
@@ -112,10 +115,9 @@ else
             _activeRound.GiveAnswer(-1);
             _activeGame.AddRound(_activeRound);
         }
+
         _activeRound = null;
         _userInput = string.Empty;
-        
-        
     }
 
     private void OnScreenKeyPress(int number)
@@ -134,17 +136,26 @@ else
 
         while (_activeRound.Numbers.Count < _activeGame.NumbersToSum)
         {
+            // make number flash 
+            _numberFlashTime = true;
+            StateHasChanged();
+            await Task.Delay(100);
+            _numberFlashTime = false;
+            StateHasChanged();
+
+
             int min = -_activeRound.TotalSum;
 
-            int max = (int)Math.Pow(10, _activeGame.DigitsToShow) - 1 -  _activeRound.TotalSum;
+            int max = (int)Math.Pow(10, _activeGame.DigitsToShow) - 1 - _activeRound.TotalSum;
 
             StateHasChanged(); // Refresh UI
 
             await Task.Delay(_activeGame.DelayInMilliseconds);
             _activeRound.Numbers.Add(_random.Next(min, max));
         }
-        _activeRound.LastNumberShownTime = DateTime.Now;
 
+        _activeRound.LastNumberShownTime = DateTime.Now;
     }
 
 }
+
