@@ -1,5 +1,5 @@
 self.assetsManifest = {
-  "version": "vPdt1+/D",
+  "version": "KKIFTjgU",
   "assets": [
     {
       "hash": "sha256-FqTaEL8BV9TzyL9nukyntnIBb53h0pKRWBtQP5F09MY=",
@@ -8,6 +8,10 @@ self.assetsManifest = {
     {
       "hash": "sha256-8+iZ8ET0xqP09OvKHJWYGFCjPZyiASD7Kl1tcdK6rj0=",
       "url": "_content/MudBlazor/MudBlazor.min.js"
+    },
+    {
+      "hash": "sha256-VoUIgveHEZJCsID2oglbMfQCyVeViKrZ7FfL+4ymxtw=",
+      "url": "_framework/MathGame.Web.2dwi534rmi.wasm"
     },
     {
       "hash": "sha256-kcA2Dk7JygJF8/5tPfGv7Zrh/n2N6SG5Ym1c+1ynCEk=",
@@ -162,7 +166,7 @@ self.assetsManifest = {
       "url": "_framework/System.Text.RegularExpressions.17bp9xodre.wasm"
     },
     {
-      "hash": "sha256-5zS5MsOBv7R69hnjJPHmlj0/JZOuTYwd9OBYLI+QqYk=",
+      "hash": "sha256-aq+QoyT4m0Kt+tqf1Nrl0R6Ge7uElnfnOYqVjS8Yat0=",
       "url": "_framework/blazor.boot.json"
     },
     {
@@ -196,10 +200,6 @@ self.assetsManifest = {
     {
       "hash": "sha256-L7sV7NEYP37/Qr2FPCePo5cJqRgTXRwGHuwF5Q+0Nfs=",
       "url": "_framework/icudt_no_CJK.lfu7j35m59.dat"
-    },
-    {
-      "hash": "sha256-1CN3hpHriX60K0e4uhHnXEUEVfaCwG/O2vjZV13ZRIE=",
-      "url": "_framework/math-game.Web.swpgxdadxp.wasm"
     },
     {
       "hash": "sha256-FEcjGL5Vayj/vVFfza9Fl7AOyv/PLNTZoBBgB6QciYc=",
