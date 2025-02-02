@@ -1,9 +1,9 @@
 {
   "mainAssemblyName": "MathGame.Web",
   "resources": {
-    "hash": "sha256-zW77otnBlZLGwUwF60lVLytDZEl1gFYCYAyPVXtP0H4=",
+    "hash": "sha256-9TNvKoDEooA8mz2uFa+6dPdPtqixs/Gh5l+gyTBLFUI=",
     "fingerprinting": {
-      "MathGame.Web.9uit9yujnc.wasm": "MathGame.Web.wasm",
+      "MathGame.Web.0mgoochqtv.wasm": "MathGame.Web.wasm",
       "Microsoft.AspNetCore.Components.Forms.p4cmqynr10.wasm": "Microsoft.AspNetCore.Components.Forms.wasm",
       "Microsoft.AspNetCore.Components.sge8fmk1py.wasm": "Microsoft.AspNetCore.Components.wasm",
       "Microsoft.AspNetCore.Components.Web.rplweegs96.wasm": "Microsoft.AspNetCore.Components.Web.wasm",
@@ -75,7 +75,7 @@
       "System.Runtime.InteropServices.JavaScript.v6n6nxwok6.wasm": "sha256-51U1Jop+TFZlL27Bx6Je5B5J9n00+dyKolwuS3qVOUA="
     },
     "assembly": {
-      "MathGame.Web.9uit9yujnc.wasm": "sha256-oRWfkAwRukQPUfmZ6d56dqgx/vliIkh8yT/lk+T2uWY=",
+      "MathGame.Web.0mgoochqtv.wasm": "sha256-6D2snMWf6KKdwddNutDkB0QN3pslJbv0d2U3WPnd4zg=",
       "Microsoft.AspNetCore.Components.Forms.p4cmqynr10.wasm": "sha256-6TjAnwK83qx2u7jJRERCUpe4alFqntX4/M0Mk/AXYRA=",
       "Microsoft.AspNetCore.Components.sge8fmk1py.wasm": "sha256-xP1C3Czbb6mE5WKq2mYDff9Xi2S7LbZOSRn/kpcTdCE=",
       "Microsoft.AspNetCore.Components.Web.rplweegs96.wasm": "sha256-7/szuVR6veccoHr/H/uoSyrqd2aH0hgm0JxniPghJcs=",
