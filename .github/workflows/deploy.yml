@@ -26,11 +26,16 @@ jobs:
             cd ./MathGame.Web
             dotnet publish -c Release -o ../release /p:BasePath=/math-game/
 
+      - name: Fix Blazor integrity issues
+        run: |
+          find release/wwwroot/ -name "*.gz" -delete
+          find release/wwwroot/ -name "*.br" -delete
+
+      - name: Disable Jekyll
+        run: touch release/wwwroot/.nojekyll
+
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
           folder: release/wwwroot
-
-      - name: Disable Jekyll
-        run: touch release/wwwroot/.nojekyll
