@@ -19,7 +19,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '8.0.x'  # Käytä Blazor WASM -versiosi mukaista .NET:iä
+          dotnet-version: '9.0.x'  # Käytä Blazor WASM -versiosi mukaista .NET:iä
 
       - name: Publish Blazor WASM
         run: dotnet publish -c Release -o release
