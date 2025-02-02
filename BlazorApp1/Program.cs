@@ -16,6 +16,8 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+var appBasePath = builder.Configuration.GetValue<string>("AppBasePath");
+Console.WriteLine($"AppBasePath: {appBasePath}");
 app.UseHttpsRedirection();
 
 
