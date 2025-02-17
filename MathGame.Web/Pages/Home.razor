@@ -47,7 +47,7 @@
             <MudGrid Justify="Justify.Center">
                 <MudItem xs="12">
                     @{
-                        string value = _numberFlashTime ? "+" : _activeRound.Numbers.Any() ? _activeRound.Numbers.Last().ToString() : "+";
+                        string value = GetValue(); 
                         var proggressColor = _activeGame.NumbersToSum == _activeRound.Numbers.Count() ? Color.Success : Color.Primary;
 
                         <MudText Align="Align.Center" Typo="Typo.h1">
@@ -79,10 +79,8 @@
     }
     else
     {
-        <h3>Welcome to the Math Game!</h3>
-        <SelectGame GameSettings="@_gameSettings"/>
+            <SelectGame StartGameCalled="StartGame" />
 
-        <button @onclick="StartGame">Aloita peli</button>
     }
 
 </MudContainer>
@@ -92,16 +90,16 @@
     private string _userInput = string.Empty;
     private Random _random = new Random();
 
-    private GameSettings _gameSettings { get; set; } = new GameSettings();
 
     private Game? _activeGame;
     private Round? _activeRound;
     private bool _numberFlashTime;
 
-    private async Task StartGame()
+    private async Task StartGame(GameSettings gameSettings)
     {
-        _activeGame = new Game(_gameSettings);
+        _activeGame = new Game(gameSettings);
     }
+    
 
     private void SubmitAnswer()
     {
@@ -155,6 +153,47 @@
         }
 
         _activeRound.LastNumberShownTime = DateTime.Now;
+    }
+    
+    
+
+    private string GetValue()
+    {
+        if (_numberFlashTime)
+        {
+            return "+";
+        }
+        
+        if(_activeRound.Numbers.Any())
+        {
+            return GetReturnValueFormat(_activeRound.Numbers.Last());
+        }
+
+        return "+";
+        
+    }
+    
+    private string[] _englishNumbers = new string[] { "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine" };
+
+    private string GetReturnValueFormat(int number)
+    {
+        if (_activeGame.UseEnglishNumbers)
+        {
+            var abs = Math.Abs(number);
+            if(number < 0)
+            {
+                return "minus " + _englishNumbers[abs];
+            }
+            else
+            {
+                return _englishNumbers[number];
+            }
+        }
+        else
+        {
+            return number.ToString();
+            
+        }
     }
 
 }

@@ -1,10 +1,15 @@
-﻿<h3>SelectGame</h3>
+﻿
+<MudCard>
 
+    <h3>Welcome to the Math Game!</h3>
+    <h4>Select game settings</h4>
+<MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
 <MudGrid>
-    
+        
+
     <MudItem xs="6">
 
-        <MudInput Variant="Variant.Outlined" Label="Kesto millisekunneissa " @bind-Value="GameSettings.DelayInMilliseconds"/>
+        <MudTextField Variant="Variant.Outlined" Label="Kesto millisekunneissa " @bind-Value="GameSettings.DelayInMilliseconds"/>
     </MudItem>
     <MudItem xs="6">
 
@@ -12,7 +17,9 @@
     </MudItem>
     <MudItem xs="6">
 
-        <MudInput Variant="Variant.Outlined" Label="Kuinka pitkiä lukuja?" @bind-Value="GameSettings.DigitsToShow"/>
+        @* <MudTextField Variant="Variant.Filled" Label="Kuinka pitkiä lukuja?" @bind-Value="GameSettings.DigitsToShow"/> *@
+        <MudTextField T="int" Variant="Variant.Outlined" Label="Kuinka pitkiä lukuja?" @bind-Value="GameSettings.DigitsToShow"
+                      Validation="@(new Func<int, IEnumerable<string>>(DigitsToShowValidator))"/>
     </MudItem>
     <MudItem xs="6">
 
@@ -20,17 +27,55 @@
     </MudItem>
     <MudItem xs="6">
 
-        <MudInput Variant="Variant.Outlined"  Label="Montako lukua" @bind-Value="GameSettings.NumbersToSum"/>
+        <MudTextField Variant="Variant.Outlined" Label="Montako lukua" @bind-Value="GameSettings.NumbersToSum"/>
     </MudItem>
     <MudItem xs="6">
 
         <MudCheckBox Label="Korota tasoa onnistuessa" @bind-Value="GameSettings.NumbersLevelScaleOn"/>
     </MudItem>
+    <MudItem xs="12">
+
+        <MudCheckBox T="bool" Label="Käytä englannin kielisiä lukuja" @bind-Value="GameSettings.UseEnglishNumbers"
+                      Validation="@(new Func<bool, IEnumerable<string>>(UseEnglishNumbersValidator))"/>
+    </MudItem>
 
 </MudGrid>
+</MudForm>
 
+<MudButton Disabled="!success" Variant="Variant.Filled" Color="Color.Success" OnClick="StartGame" >Aloita peli</MudButton>
+</MudCard>
 @code {
-    [Parameter]
-    public GameSettings GameSettings { get; set; }
+    public GameSettings GameSettings { get; set; } = new GameSettings();
     
+    [Parameter]
+    public EventCallback<GameSettings> StartGameCalled { get; set; }
+    
+    bool success;
+    string[] errors = { };
+    MudForm form;
+    
+    private async Task StartGame()
+    {
+        await StartGameCalled.InvokeAsync(GameSettings);
+    }
+
+    private IEnumerable<string> DigitsToShowValidator(int arg)
+    {
+        if (GameSettings.UseEnglishNumbers && arg > 1)
+        {
+            yield return  "English numbers can only be one digit long" ;
+        }
+        
+    }
+
+
+    private IEnumerable<string> UseEnglishNumbersValidator(bool arg)
+    {
+        if (GameSettings.UseEnglishNumbers && GameSettings.DigitsToShow > 1)
+        {
+            yield return "English numbers can only be one digit long";
+        }
+        
+    }
+
 }

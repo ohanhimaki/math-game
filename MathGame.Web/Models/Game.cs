@@ -6,8 +6,11 @@
         DelayInMilliseconds = gameSettings.DelayInMilliseconds;
         DigitsToShow = gameSettings.DigitsToShow;
         NumbersToSum = gameSettings.NumbersToSum;
+        UseEnglishNumbers = gameSettings.UseEnglishNumbers;
     }
-    
+
+    public bool UseEnglishNumbers { get; set; }
+
     public int DelayInMilliseconds { get; set; } 
     public int DigitsToShow { get; set; } 
     public int NumbersToSum { get; set; } 

@@ -10,6 +10,8 @@ public class GameSettings
     public bool DigitsLevelScaleOn { get; set; } = false;
     public bool NumbersLevelScaleOn { get; set; } = false;
     
+    public bool UseEnglishNumbers { get; set; } = false;
+    
     
     // advanced 
     public int? MaxAnswerTimeMilliseconds { get; set; } = null;
