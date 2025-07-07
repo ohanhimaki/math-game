@@ -1,7 +1,7 @@
 ﻿@inject IConfiguration Config
 <HeadContent>
     @* <base href="/@(Config.GetValue<string>("AppBasePath"))" /> *@
-    <base href="/math-game"/>
+    <base href="/math-game/"/>
 </HeadContent>
 <Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
