@@ -5,9 +5,17 @@
         {
             var previousRound = Game.Rounds.Last();
             var prevAnswer = previousRound.IsCorrect ?? false ? "Oikein" : "Väärin";
-            <MudItem>
+            var color = previousRound.IsCorrect ?? false ? Color.Success : Color.Error;
+            <MudItem xs="12">
 
-                <MudText>Edellisen kierroksen vastaus oli @prevAnswer </MudText>
+                <MudButton Variant="Variant.Filled" Style="width: 100%; height: 100%;" Color="color">
+                    <MudText Typo="Typo.h3">
+                        
+                        @prevAnswer
+                    </MudText>
+                </MudButton>
+            </MudItem>
+            <MudItem>
                 <MudText>Vastaukseen kului aikaa: @(previousRound.TimeTaken?.TotalMilliseconds / 1000)</MudText>
 
                 @if (previousRound.IsCorrect == false)
@@ -17,9 +25,6 @@
                 }
             </MudItem>
         }
-        <MudItem xs="12">
-            <MudButton Variant="Variant.Filled" OnClick="StartRound">Aloita kierros</MudButton>
-        </MudItem>
         <MudItem xs="12">
             @Game.RuleDescriptionShort
         </MudItem>
@@ -33,6 +38,9 @@
                 <MudText>Yhteensä oikeita vastauksia: @Game.Rounds.Count(x => x.IsCorrect == true)</MudText>
             </MudItem>
         }
+        <MudItem xs="12">
+            <MudButton Color="Color.Success" Style="width: 100%; height: 100%;" Variant="Variant.Filled" OnClick="StartRound">Aloita kierros</MudButton>
+        </MudItem>
     </MudGrid>
 }
 else
@@ -40,12 +48,8 @@ else
     <MudGrid Justify="Justify.Center">
         <MudItem xs="12">
             @{
-                string value = GetValue();
+                <ShowMathGameNumber Value="@GetValue()" Numbers="_activeRound.Numbers"></ShowMathGameNumber>
                 var proggressColor = Game.NumbersToSum == _activeRound.Numbers.Count() ? Color.Success : Color.Primary;
-
-                <MudText Align="Align.Center" Typo="Typo.h1">
-                    @value
-                </MudText>
                 <MudProgressLinear Color="@proggressColor" Striped="true" Size="Size.Large" Value="_activeRound.Numbers.Count()" Max="Game.NumbersToSum" Class="my-7"/>
             }
         </MudItem>
@@ -56,23 +60,24 @@ else
 
     </MudGrid>
 
-    <MudGrid Justify="Justify.Center">
+    <MudGrid Justify="Justify.FlexEnd">
 
         @for (int i = 0; i <= 9; i++)
         {
             var capturedI = (i + 1) % 10;
             <MudItem xs="4">
-                <MudButton Variant="Variant.Filled" OnClick="() => OnScreenKeyPress(capturedI)"> @capturedI</MudButton>
+                <MudButton Style="height: 100%; width: 100%;" Variant="Variant.Filled" OnClick="() => OnScreenKeyPress(capturedI)"> @capturedI</MudButton>
 
             </MudItem>
         }
+        <MudItem xs="4">
+            <MudButton Variant="Variant.Filled" Color="Color.Success" Style="height: 100%; width: 100%;" @onclick="SubmitAnswer">Lähetä</MudButton>
+        </MudItem>
     </MudGrid>
-    <button @onclick="SubmitAnswer">Lähetä</button>
 }
 
 @code {
-    [Parameter]
-    public Game Game { get; set; }
+    [Parameter] public Game Game { get; set; }
     private Round? _activeRound;
     private string _userInput = string.Empty;
     private Random _random = new Random();
@@ -112,14 +117,6 @@ else
 
         while (_activeRound.Numbers.Count < Game.NumbersToSum)
         {
-            // make number flash 
-            _numberFlashTime = true;
-            StateHasChanged();
-            await Task.Delay(100);
-            _numberFlashTime = false;
-            StateHasChanged();
-
-
             int min = -_activeRound.TotalSum;
 
             int max = (int)Math.Pow(10, Game.DigitsToShow) - 1 - _activeRound.TotalSum;
@@ -157,17 +154,13 @@ else
 
     private string GetValue()
     {
-        if (_numberFlashTime)
-        {
-            return "+";
-        }
-
         if (_activeRound.Numbers.Any())
         {
             return GetReturnValueFormat(_activeRound.Numbers.Last());
         }
 
-        return "+";
+        return "";
     }
+
 
 }

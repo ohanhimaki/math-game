@@ -1,0 +1,18 @@
+﻿                
+@{
+    var color = Numbers.Count % 2 == 0 ? Color.Primary : Color.Secondary;
+    
+}
+<MudButton Style="width: 100%; height: 100%;"  Variant="Variant.Filled" Color="color">
+    <MudText @key="Numbers.Count" Align="Align.Center" Typo="Typo.h1">
+
+        @Value
+    </MudText>
+</MudButton>
+
+@code {
+     [Parameter]
+    public string Value { get; set; }
+    [Parameter]
+    public List<int> Numbers { get; set; }
+}
