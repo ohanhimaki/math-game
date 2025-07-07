@@ -1,0 +1,38 @@
+﻿@page "/math"
+
+
+<MudContainer Class="mt-16" MaxWidth="MaxWidth.Medium">
+
+    @if (_activeGame != null)
+    {
+        <RunMathGame Game="_activeGame" />
+    }
+    else
+    {
+            <SelectGame StartGameCalled="StartGame" />
+
+    }
+
+</MudContainer>
+
+@code {
+
+
+
+    private Game? _activeGame;
+
+    private async Task StartGame(GameSettings gameSettings)
+    {
+        _activeGame = new Game(gameSettings);
+    }
+    
+
+
+
+    
+    
+
+    
+
+}
+
