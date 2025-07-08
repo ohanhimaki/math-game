@@ -9,8 +9,8 @@
       "url": "_content\/MudBlazor\/MudBlazor.min.js.br"
     },
     {
-      "hash": "sha256-HmtM\/T9nXp\/GHMGnqQdeevgX6zDXTooJtLIcSp3l\/x8=",
-      "url": "_framework\/MathGame.Web.mj9evsnbsa.wasm.br"
+      "hash": "sha256-PL6KWZ7nof3s7HA3HkyyQMkrj7BKMiZYgF8uKHaFzxo=",
+      "url": "_framework\/MathGame.Web.au1tt9u379.wasm.br"
     },
     {
       "hash": "sha256-ga88f8bJGFW01n70Q8WMpyacJ9ZOuuOlG7xeYHd5dFM=",
@@ -189,7 +189,7 @@
       "url": "_framework\/System.cunp5qiwjj.wasm.br"
     },
     {
-      "hash": "sha256-xitl0bSgg8+upxqVXrEZTx7gxOo2ctQGIl6ft7wVKv0=",
+      "hash": "sha256-CTt2HBmaykWcfLoN0xOytglNCnDgb26AbTSI7U2sNLQ=",
       "url": "_framework\/blazor.boot.json.br"
     },
     {
@@ -253,5 +253,5 @@
       "url": "brotliloader.min.js"
     }
   ],
-  "version": "JvjzpqT8"
+  "version": "aBQSTo3m"
 };

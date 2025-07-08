@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "MathGame.Web",
   "resources": {
-    "hash": "sha256-wJvjFKMegCzn+a8QK7IXc8+XPf0oOwy2oNaNHg5j7E4=",
+    "hash": "sha256-ai9NlDMl3oku9r2B8liYliPd4KOIYeGpX9l2tjNe3bI=",
     "fingerprinting": {
       "Microsoft.AspNetCore.Components.uq1fv3txfx.wasm": "Microsoft.AspNetCore.Components.wasm",
       "Microsoft.AspNetCore.Components.Forms.p4cmqynr10.wasm": "Microsoft.AspNetCore.Components.Forms.wasm",
@@ -47,7 +47,7 @@
       "System.Text.RegularExpressions.gnx2948s22.wasm": "System.Text.RegularExpressions.wasm",
       "System.cunp5qiwjj.wasm": "System.wasm",
       "System.Private.CoreLib.p7b8zuyyf6.wasm": "System.Private.CoreLib.wasm",
-      "MathGame.Web.mj9evsnbsa.wasm": "MathGame.Web.wasm",
+      "MathGame.Web.au1tt9u379.wasm": "MathGame.Web.wasm",
       "dotnet.js": "dotnet.js",
       "dotnet.native.rtblh4npr3.js": "dotnet.native.js",
       "dotnet.native.aqhezbunpl.wasm": "dotnet.native.wasm",
@@ -117,7 +117,7 @@
       "System.Text.Json.tlrinbprgy.wasm": "sha256-QS+RfEn0HI04xtioHiBQZCctLZN8vGzucUROX2gAjdw=",
       "System.Text.RegularExpressions.gnx2948s22.wasm": "sha256-JDAboGoEflS6KHgvQJnlZkjQMsyUB2pQoTW9jSvlIVs=",
       "System.cunp5qiwjj.wasm": "sha256-DM5iEENhrifGKn33Y7cqRzxC0OtHXYOKO13icwIazj8=",
-      "MathGame.Web.mj9evsnbsa.wasm": "sha256-LjlmyrEs1r3Q3MDe/9GaKeOAQipdHMJhLCE5Uajx6N8="
+      "MathGame.Web.au1tt9u379.wasm": "sha256-kk91h9tXk2d77Hiao5yI5ufeLXRWfm8qo/zk+IUEZFA="
     }
   },
   "cacheBootResources": true,
