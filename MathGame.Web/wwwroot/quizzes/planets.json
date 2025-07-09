@@ -1,0 +1,29 @@
+﻿{
+  "id": "quiz-planeetat",
+  "title": "Planeetat oikeaan järjestykseen",
+  "description": "Sijoita planeetat auringosta kauemmas oikeaan järjestykseen.",
+  "valueType": "number",
+  "showAnswer": true,
+  "items": [
+    {
+      "id": "item-1",
+      "text": "Venus",
+      "value": 2
+    },
+    {
+      "id": "item-2",
+      "text": "Neptunus",
+      "value": 8
+    },
+    {
+      "id": "item-3",
+      "text": "Mars",
+      "value": 4
+    },
+    {
+      "id": "item-4",
+      "text": "Jupiter",
+      "value": 5
+    }
+  ]
+}

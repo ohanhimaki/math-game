@@ -1,0 +1,50 @@
+﻿@page "/quiz"
+@using MathGame.Web.Models.Quiz
+@inject QuizService QuizService
+
+
+<MudContainer Class="mt-16" MaxWidth="MaxWidth.Medium">
+
+    @if (_activeGame != null)
+    {
+        <RunQuizGame Game="_activeGame" />
+    }
+    else
+    {
+            
+        <MudSelect T="QuizFileInfo" @bind-Value="_activeQuiz" Label="Select a Quiz" Variant="Variant.Outlined" Class="mb-4">
+            @foreach (var quiz in Quizzes)
+            {
+                <MudSelectItem Value="@quiz">@quiz.title</MudSelectItem>
+            }
+        </MudSelect>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="() => StartGame()">
+            Start Quiz
+        </MudButton>
+
+    }
+
+</MudContainer>
+@code {
+    
+    private QuizFileInfo? _activeQuiz;
+    private QuizGame? _activeGame;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Quizzes = await QuizService.LoadQuizzesAsync();
+        await base.OnInitializedAsync();
+    }
+
+    public List<QuizFileInfo> Quizzes { get; set; } = new();
+
+    public async Task StartGame()
+    {
+        var quiz = await QuizService.LoadQuizByIdAsync(_activeQuiz.filename);
+        if (quiz != null)
+        {
+            _activeGame = new QuizGame(quiz);
+        }
+    }
+
+}

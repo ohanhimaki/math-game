@@ -10,6 +10,8 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
 var appBasePath = builder.Configuration.GetValue<string>("AppBasePath");
+
+builder.Services.AddScoped<QuizService>();
 Console.WriteLine($"AppBasePath: {appBasePath}");
 
 builder.Services.AddMudServices();

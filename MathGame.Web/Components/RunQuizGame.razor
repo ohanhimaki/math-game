@@ -1,0 +1,92 @@
+﻿@using MathGame.Web.Models.Quiz
+
+@if (Game.Players == 1)
+{
+    var player = 1;
+    <MudPaper Class="p-4">
+        <MudText Typo="Typo.h6">Nosta uusi kortti:</MudText>
+        <MudButton Disabled="CurrentItem is not null" Variant="Variant.Filled" OnClick="DrawNext">Nosta kortti</MudButton>
+
+        @if (CurrentItem is not null)
+        {
+            <MudPaper Class="mt-4 p-2">
+                <MudText Typo="Typo.h5">@CurrentItem.text</MudText>
+            </MudPaper>
+        }
+        <MudText Typo="Typo.h6" Class="mt-4">Pöydällä olevat kortit:</MudText>
+
+        @if (Game.PlayerCards[player].Count == 0 && CurrentItem is null)
+        {
+        <MudText>Ei vielä kortteja.</MudText>
+        }
+        else
+        {
+            <MudList T="string">
+                <MudListItem  T="string" OnClick="() => SetHere(null,Game.PlayerCards[player].FirstOrDefault())">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary">Aseta Tähän</MudButton>
+                </MudListItem>
+                @if (Game.PlayerCards[player].Count > 0)
+                {
+                    for (int i = 0; i < Game.PlayerCards[player].Count; i++)
+                    {
+                        Console.WriteLine(i.ToString());
+                        var item = Game.PlayerCards[player][i];
+                        QuizItem? prev = i > 0 ? Game.PlayerCards[player][i] : null;
+                        QuizItem? next = i+1 < Game.PlayerCards[player].Count ? Game.PlayerCards[player][i + 1] : null;
+                        <MudListItem T="string">
+                            <MudStack Row>
+                                
+                            <MudText>@item.text</MudText>
+                            @if (Game.ShowValue)
+                            {
+                                <MudText Color="Color.Secondary" Class="ml-2">(Arvo: @item.value)</MudText>
+                            }
+                            </MudStack>
+                        </MudListItem>
+                        <MudListItem T="string" OnClick="() => SetHere(prev, next)">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary">Aseta Tähän</MudButton>
+                        </MudListItem>
+                    }
+                }
+            </MudList>
+        }
+        
+    </MudPaper>
+}
+
+
+@code {
+    [Parameter] public required QuizGame Game { get; set; }
+
+
+    private QuizItem? CurrentItem;
+
+    private void DrawNext()
+    {
+        CurrentItem = Game.GetRandomQuestion();
+    }
+
+    private Task SetHere(QuizItem? prev, QuizItem? next)
+    {
+        
+        // var prevCheck = prev is null || CurrentItem.value >= prev.value;
+        // // check that currentitem value is between prev and next
+        // if (prev != null && next != null)
+        // {
+        //     if (CurrentItem == null || CurrentItem.value < prev.value || CurrentItem.value > next.value)
+        //     {
+        //         return Task.CompletedTask;
+        //     }
+        // }
+
+        if (CurrentItem is not null)
+        {
+            
+            Game.PlayerCards[1].Add(CurrentItem);
+        }
+        CurrentItem = null;
+        return Task.CompletedTask;
+        
+    }
+
+}

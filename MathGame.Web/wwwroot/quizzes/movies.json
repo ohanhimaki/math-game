@@ -1,0 +1,24 @@
+﻿{
+  "id": "quiz-001",
+  "title": "Elokuvat aikajärjestykseen",
+  "description": "Sijoita elokuvat oikeaan järjestykseen niiden ilmestymispäivän mukaan.",
+  "valueType": "date", 
+  "showAnswer": true,
+  "items": [
+    {
+      "id": "item-1",
+      "text": "Titanic",
+      "value": "1997-12-19"
+    },
+    {
+      "id": "item-2",
+      "text": "Inception",
+      "value": "2010-07-16"
+    },
+    {
+      "id": "item-3",
+      "text": "The Matrix",
+      "value": "1999-03-31"
+    }
+  ]
+}
