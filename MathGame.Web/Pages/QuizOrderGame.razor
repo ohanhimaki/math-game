@@ -1,13 +1,14 @@
 ﻿@page "/quiz"
+@using System.Text.Json.Serialization
 @using MathGame.Web.Models.Quiz
 @inject QuizService QuizService
 
 
 <MudContainer Class="mt-16" MaxWidth="MaxWidth.Medium">
 
-    @if (_activeGame != null)
+    @if (_gameFragment is not null)
     {
-        <RunQuizGame Game="_activeGame" />
+        @_gameFragment
     }
     else
     {
@@ -18,17 +19,23 @@
                 <MudSelectItem Value="@quiz">@quiz.title</MudSelectItem>
             }
         </MudSelect>
+        <MudTextField T="string" Label="Quiz Type" Variant="Variant.Outlined" @bind-Value="@_playerNames" ReadOnly Class="mb-4"/>
+        
         <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="() => StartGame()">
             Start Quiz
         </MudButton>
-
+// Link to start spotify from this song: spotify:track:3ApNJsJf8qKCivGoJTeCrz
+        @* <MudLink Href="https://open.spotify.com/track/3ApNJsJf8qKCivGoJTeCrz" Target="_blank" Class="mt-4"> *@
+        @*     Listen to the quiz theme song *@
+        @* </MudLink> *@
     }
 
 </MudContainer>
 @code {
     
     private QuizFileInfo? _activeQuiz;
-    private QuizGame? _activeGame;
+    private RenderFragment? _gameFragment;
+    private string _playerNames = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -40,10 +47,37 @@
 
     public async Task StartGame()
     {
-        var quiz = await QuizService.LoadQuizByIdAsync(_activeQuiz.filename);
-        if (quiz != null)
+        switch (_activeQuiz.valueType.ToLowerInvariant())
         {
-            _activeGame = new QuizGame(quiz);
+            case "int":
+                var intQuiz = await QuizService.LoadQuizByFilenameAsync<int>(_activeQuiz.filename);
+                var intGame = new QuizGame<int>(intQuiz);
+                _gameFragment = builder =>
+                {
+                    builder.OpenComponent(0, typeof(RunQuizGame<int>));
+                    builder.AddAttribute(1, "Game", intGame);
+                    builder.CloseComponent();
+                };
+                break;
+
+            case "date":
+                var strQuiz = await QuizService.LoadQuizByFilenameAsync<DateOnly>(_activeQuiz.filename);
+                var strGame = new QuizGame<DateOnly>(strQuiz);
+                _gameFragment = builder =>
+                {
+                    builder.OpenComponent(0, typeof(RunQuizGame<DateOnly>));
+                    builder.AddAttribute(1, "Game", strGame);
+                    builder.CloseComponent();
+                };
+                break;
+
+            default:
+                // virheellinen tyyppi
+                _gameFragment = builder =>
+                {
+                    builder.AddContent(0, $"Tuntematon tyyppi: {_activeQuiz.valueType}");
+                };
+                break;
         }
     }
 

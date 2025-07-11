@@ -1,92 +1,153 @@
 ﻿@using MathGame.Web.Models.Quiz
+@typeparam T where T : IComparable<T> 
+@inject ISnackbar SnackBar
 
-@if (Game.Players == 1)
-{
-    var player = 1;
-    <MudPaper Class="p-4">
-        <MudText Typo="Typo.h6">Nosta uusi kortti:</MudText>
-        <MudButton Disabled="CurrentItem is not null" Variant="Variant.Filled" OnClick="DrawNext">Nosta kortti</MudButton>
 
-        @if (CurrentItem is not null)
-        {
-            <MudPaper Class="mt-4 p-2">
-                <MudText Typo="Typo.h5">@CurrentItem.text</MudText>
-            </MudPaper>
-        }
-        <MudText Typo="Typo.h6" Class="mt-4">Pöydällä olevat kortit:</MudText>
+<MudPaper Elevation="4">
+    <MudText Typo="Typo.h2"> @Game.QuizTitle</MudText>
+    <MudText Typo="Typo.subtitle1"> @Game.QuizDescription</MudText>
+    Kortteja: @Game.TotalQuestionsLeft / @Game.TotalQuestions
 
-        @if (Game.PlayerCards[player].Count == 0 && CurrentItem is null)
-        {
-        <MudText>Ei vielä kortteja.</MudText>
-        }
-        else
-        {
-            <MudList T="string">
-                <MudListItem  T="string" OnClick="() => SetHere(null,Game.PlayerCards[player].FirstOrDefault())">
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary">Aseta Tähän</MudButton>
-                </MudListItem>
-                @if (Game.PlayerCards[player].Count > 0)
-                {
-                    for (int i = 0; i < Game.PlayerCards[player].Count; i++)
+    Pelaajia: @Game.Players.Count
+</MudPaper>
+
+<MudTabs>
+
+    @foreach (var player in Game.Players)
+    {
+        <MudTabPanel Text="@player.Name">
+            <MudPaper Class="p-4">
+
+                <MudPaper Class="mt-4 p-2">
+                    @if (CurrentItem is not null)
                     {
-                        Console.WriteLine(i.ToString());
-                        var item = Game.PlayerCards[player][i];
-                        QuizItem? prev = i > 0 ? Game.PlayerCards[player][i] : null;
-                        QuizItem? next = i+1 < Game.PlayerCards[player].Count ? Game.PlayerCards[player][i + 1] : null;
-                        <MudListItem T="string">
-                            <MudStack Row>
-                                
-                            <MudText>@item.text</MudText>
-                            @if (Game.ShowValue)
-                            {
-                                <MudText Color="Color.Secondary" Class="ml-2">(Arvo: @item.value)</MudText>
-                            }
-                            </MudStack>
-                        </MudListItem>
-                        <MudListItem T="string" OnClick="() => SetHere(prev, next)">
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary">Aseta Tähän</MudButton>
-                        </MudListItem>
+                        <MudText Typo="Typo.h5"> Korttisi: @CurrentItem.text</MudText>
                     }
-                }
-            </MudList>
-        }
-        
-    </MudPaper>
-}
+                    else
+                    {
+                        <MudButton Disabled="CurrentItem is not null" Variant="Variant.Filled" OnClick="DrawNext">Nosta kortti</MudButton>
+                    }
+                </MudPaper>
+                <MudText Typo="Typo.h6" Class="mt-4">Pöydällä olevat kortit:</MudText>
 
+                @if (player.Cards.Count == 0 && CurrentItem is null)
+                {
+                    <MudText>Ei vielä kortteja.</MudText>
+                }
+                else
+                {
+                    <MudList T="string">
+                        <MudListItem T="string">
+                            <MudButton
+                                OnClick="() => SetHere(player, null, player.Cards.FirstOrDefault())"
+                                Disabled="CurrentItem is null" Style="width: 100%; height: 100%;" Variant="Variant.Filled" Color="Color.Primary">
+                                Aseta Tähän
+                            </MudButton>
+                        </MudListItem>
+                        @if (player.Cards.Count > 0)
+                        {
+                            for (int i = 0; i < player.Cards.Count; i++)
+                            {
+                                var item = player.Cards[i];
+                                var prev = i > 0 ? player.Cards[i] : null;
+                                var next = i + 1 < player.Cards.Count ? player.Cards[i + 1] : null;
+                                <MudListItem T="string">
+                                    <MudStack Row>
+
+                                        <MudText>@item.text</MudText>
+                                        @if (Game.ShowValue)
+                                        {
+                                            <MudText Color="Color.Secondary" Class="ml-2">(Arvo: @item.value)</MudText>
+                                        }
+                                    </MudStack>
+                                </MudListItem>
+                                <MudListItem T="string">
+                                    <MudButton
+                                        OnClick="() => SetHere(player, prev, next)"
+                                        Disabled="CurrentItem is null" Style="width: 100%; height: 100%;" Variant="Variant.Filled" Color="Color.Primary">
+                                        Aseta Tähän
+                                    </MudButton>
+                                </MudListItem>
+                            }
+                        }
+                    </MudList>
+                }
+
+            </MudPaper>
+
+
+        </MudTabPanel>
+    }
+
+</MudTabs>
 
 @code {
-    [Parameter] public required QuizGame Game { get; set; }
+    [Parameter] public required QuizGame<T> Game { get; set; }
 
 
-    private QuizItem? CurrentItem;
+    private QuizItem<T>? CurrentItem;
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            
+            if (Game is null)
+            {
+                throw new ArgumentNullException(nameof(Game), "Game parameter must be set.");
+            }
+
+            if (Game.Players.Count == 0)
+            {
+                throw new InvalidOperationException("At least one player must be added to the game before starting.");
+            }
+
+            foreach (var gamePlayer in Game.Players)
+            {
+                if (gamePlayer.Cards.Count() == 0)
+                {
+                    // If player has no cards, draw a card for them
+                    var item = Game.GetRandomQuestion();
+                    if (item is not null)
+                    {
+                        gamePlayer.AddCard(item);
+                        gamePlayer.SortCards();
+                    }
+                }
+            }
+
+        }
+        return base.OnAfterRenderAsync(firstRender);
+    }
+    
 
     private void DrawNext()
     {
         CurrentItem = Game.GetRandomQuestion();
     }
 
-    private Task SetHere(QuizItem? prev, QuizItem? next)
+    private Task SetHere(Player<T> player, QuizItem<T>? prev, QuizItem<T>? next)
     {
-        
-        // var prevCheck = prev is null || CurrentItem.value >= prev.value;
-        // // check that currentitem value is between prev and next
-        // if (prev != null && next != null)
-        // {
-        //     if (CurrentItem == null || CurrentItem.value < prev.value || CurrentItem.value > next.value)
-        //     {
-        //         return Task.CompletedTask;
-        //     }
-        // }
 
-        if (CurrentItem is not null)
+        if (CurrentItem is null)
         {
-            
-            Game.PlayerCards[1].Add(CurrentItem);
+            return Task.CompletedTask;
         }
+        var result = player.CheckOrderQuess(CurrentItem, prev, next);
+
+        if (result)
+        {
+            player.AddCard(CurrentItem);
+            player.SortCards();
+        }
+        else
+        {
+            SnackBar.Add($"Väärin! Kortti: {CurrentItem.text} (Arvo: {CurrentItem.value})", Severity.Error);
+            player.AddFailedCard(CurrentItem);
+        }
+
         CurrentItem = null;
         return Task.CompletedTask;
-        
     }
 
 }

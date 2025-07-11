@@ -22,9 +22,9 @@ public class QuizService
         return Quizzes;
     }
 
-    public async Task<Quiz?> LoadQuizByIdAsync(string filename)
+    public async Task<Quiz<T>?> LoadQuizByFilenameAsync<T>(string filename) where T : IComparable<T>
     {
         var json = await _http.GetStringAsync($"quizzes/{filename}.json");
-        return JsonSerializer.Deserialize<Quiz>(json);
+        return JsonSerializer.Deserialize<Quiz<T>>(json);
     }
 }

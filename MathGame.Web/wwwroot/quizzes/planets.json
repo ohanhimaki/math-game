@@ -3,8 +3,13 @@
   "title": "Planeetat oikeaan järjestykseen",
   "description": "Sijoita planeetat auringosta kauemmas oikeaan järjestykseen.",
   "valueType": "number",
-  "showAnswer": true,
+  "showAnswer": false,
   "items": [
+    {
+      "id": "item-0",
+      "text": "Merkurius",
+      "value": 1
+    },
     {
       "id": "item-1",
       "text": "Venus",
@@ -12,8 +17,8 @@
     },
     {
       "id": "item-2",
-      "text": "Neptunus",
-      "value": 8
+      "text": "Maa",
+      "value": 3
     },
     {
       "id": "item-3",
@@ -24,6 +29,22 @@
       "id": "item-4",
       "text": "Jupiter",
       "value": 5
+    },
+    {
+      "id": "item-5",
+      "text": "Saturnus",
+      "value": 6
+    },
+    {
+      "id": "item-6",
+      "text": "Uranus",
+      "value": 7
+    },
+    {
+      "id": "item-7",
+      "text": "Neptunus",
+      "value": 8
     }
   ]
 }
+

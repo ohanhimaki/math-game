@@ -1,0 +1,57 @@
+﻿{
+  "id": "quiz-presidentit",
+  "title": "Suomen presidentit",
+  "description": "Sijoita suomen presidentit virkaan astumis vuotensa mukaan.",
+  "valueType": "int",
+  "showAnswer": true,
+  "items": [
+    {
+      "text": "K. J. Ståhlberg",
+      "value": 1919
+    },
+    {
+      "text": "L. K. Relander",
+      "value": 1925
+    },
+    {
+      "text": "P. E. Svinhufvud",
+      "value": 1931
+    },
+    {
+      "text": "R. Kallio",
+      "value": 1937
+    },
+    {
+      "text": "C. G. E. Mannerheim",
+      "value": 1944
+    },
+    {
+      "text": "J. K. Paasikivi",
+      "value": 1946
+    },
+    {
+      "text": "U. K. Kekkonen",
+      "value": 1956
+    },
+    {
+      "text": "M. Ahtisaari",
+      "value": 1994
+    },
+    {
+      "text": "T. Halonen",
+      "value": 2000
+    },
+    {
+      "text": "S. Niinistö",
+      "value": 2012
+    },
+    {
+      "text": "A. Stubb",
+        "value": 2024
+    }
+    
+    
+    
+  ]
+}
+
