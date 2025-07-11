@@ -1,12 +1,20 @@
 ﻿[
   {
     "filename": "movies",
-    "title": "Elokuvien julkaisuvuodet",
-    "description": "Sijoita elokuvat oikeaan aikajärjestykseen."
+    "title": "Elokuvien julkaisupäivät",
+    "description": "Sijoita elokuvat oikeaan aikajärjestykseen.",
+    "valueType": "date"
   },
   {
     "filename": "planets",
-    "title": "Suomalaisten hittibiisien ilmestymisvuodet",
-    "description": "Missä järjestyksessä nämä biisit ilmestyivät?"
+    "title": "Planeettojen järjestys",
+    "description": "Missä järjestyksessä nämä planeetat sijaitsevat auringosta päin?",
+    "valueType": "int"
+  },
+  {
+    "filename": "presidentit",
+    "title": "Suomen Presidentit aikajärjestyksessä",
+    "description": "Asettele presidentit aikajärjestykseen aloitusvuotensa mukaan",
+    "valueType": "int"
   }
 ]

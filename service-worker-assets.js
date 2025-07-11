@@ -9,8 +9,8 @@
       "url": "_content\/MudBlazor\/MudBlazor.min.js.br"
     },
     {
-      "hash": "sha256-xznvZhQlphvikwPB6maYYXBjVroFcdAmuYCjZrZp\/uk=",
-      "url": "_framework\/MathGame.Web.4xq11nwu4f.wasm.br"
+      "hash": "sha256-YJe0FyaWH6h0dJc2p7tKBqRR5lrCfw13YbNaRiWU7E4=",
+      "url": "_framework\/MathGame.Web.5h7fb6zct1.wasm.br"
     },
     {
       "hash": "sha256-ga88f8bJGFW01n70Q8WMpyacJ9ZOuuOlG7xeYHd5dFM=",
@@ -85,12 +85,8 @@
       "url": "_framework\/Microsoft.JSInterop.agnux60n3l.wasm.br"
     },
     {
-      "hash": "sha256-1Qkgg156+CN3gOGrPauCTHn3GxHSISKaFZStGnFMbhk=",
-      "url": "_framework\/MudBlazor.pi9r45l2yn.wasm.br"
-    },
-    {
-      "hash": "sha256-ST77gBukKCzrzp2vwxC9VFxB+6dLMwZSAZLAm916Dko=",
-      "url": "_framework\/System.Collections.1diujjy4pl.wasm.br"
+      "hash": "sha256-PEOPsz2MDSXbmq7BpTNrSwC\/np0kCiRdECN1OVrWDxs=",
+      "url": "_framework\/MudBlazor.wh7g7avib4.wasm.br"
     },
     {
       "hash": "sha256-T5KtT0d0BtyDagxmNFD\/vlBJkSjyTpTX3C51Cg3lgOA=",
@@ -107,6 +103,10 @@
     {
       "hash": "sha256-ApHlMcBBzAfNvUBPLmjF5dIjfrYMuFJ2dD4fxDMOQkw=",
       "url": "_framework\/System.Collections.Specialized.fcaqy8qtnc.wasm.br"
+    },
+    {
+      "hash": "sha256-2yoz19KBrs5HtT0IUwCmkl9fFBcZer0KjU5EDHM9H7M=",
+      "url": "_framework\/System.Collections.ofmh0rrcqs.wasm.br"
     },
     {
       "hash": "sha256-Vi3K7MuxKQu5RckTuo4\/XG5W8lSXHRYmWxXs+dhvCxE=",
@@ -161,20 +161,20 @@
       "url": "_framework\/System.ObjectModel.fbt23scx1i.wasm.br"
     },
     {
-      "hash": "sha256-8d1EEXYnDyBamTEjsQpdgzVL4tZDYRjHIo26re+B60M=",
-      "url": "_framework\/System.Private.CoreLib.t7pg6vlez4.wasm.br"
+      "hash": "sha256-0y2AofxaXZtyAoL7qdk3L9zXPOPXUZ2+K0Zy5VOuSyo=",
+      "url": "_framework\/System.Private.CoreLib.agji6z85sb.wasm.br"
     },
     {
       "hash": "sha256-25AADp0VuFDKQbZXsMe3Kb24K5ikkqjij2FSO9cPF2g=",
       "url": "_framework\/System.Private.Uri.o653xw2w59.wasm.br"
     },
     {
-      "hash": "sha256-ryi95SyqhArCiASGRpR1PXo837z3T05sZhFCwBsGqQc=",
-      "url": "_framework\/System.Runtime.InteropServices.JavaScript.lnedh9fxsl.wasm.br"
+      "hash": "sha256-4\/FnjkyO0r+YUo7r2hCSDRz4+KEYCVWH6IbpOjTy9TI=",
+      "url": "_framework\/System.Runtime.9ld1fr2wtd.wasm.br"
     },
     {
-      "hash": "sha256-gS4pZLWzW3ZE\/Lbf5GGBEdBF0S2x5s1wnqtXkaJ92oo=",
-      "url": "_framework\/System.Runtime.q3ziapxl2j.wasm.br"
+      "hash": "sha256-ryi95SyqhArCiASGRpR1PXo837z3T05sZhFCwBsGqQc=",
+      "url": "_framework\/System.Runtime.InteropServices.JavaScript.lnedh9fxsl.wasm.br"
     },
     {
       "hash": "sha256-wL119AhG5pyCZTSy2BTweve+lPDZ9sjTG\/j0kGWvGfU=",
@@ -193,7 +193,7 @@
       "url": "_framework\/System.wznexm8bk2.wasm.br"
     },
     {
-      "hash": "sha256-lQa+Y6z8hPs75cKqhpHdRTDgwbqrw0amA1i55ianfkY=",
+      "hash": "sha256-4n\/YLKQ3uzadN6Vgpa5842eKfP66pUnWwpIDBr681vA=",
       "url": "_framework\/blazor.boot.json.br"
     },
     {
@@ -249,7 +249,7 @@
       "url": "manifest.webmanifest.br"
     },
     {
-      "hash": "sha256-\/YWDMEx7HlT\/NaQPauWBnUrgFPvePJNSQmk9FgKW9Fo=",
+      "hash": "sha256-s5eiIKFoASqxu2D3Nwk2MI\/uy\/Oy\/2mEskQwvTlJD44=",
       "url": "quizzes\/index.json.br"
     },
     {
@@ -257,8 +257,12 @@
       "url": "quizzes\/movies.json.br"
     },
     {
-      "hash": "sha256-y\/vOZB0r6MqxVPitbXVvZucWV7SzJwERVCRmaEHhDUE=",
+      "hash": "sha256-61ECK9q0ca7DS2wwxlNcy7zuBSGDPzf5PPyIHPA5ytc=",
       "url": "quizzes\/planets.json.br"
+    },
+    {
+      "hash": "sha256-vrKeC6op2XN7iXd0Fsof6HgimoXF15MJGlej08Poar0=",
+      "url": "quizzes\/presidentit.json.br"
     },
     {
       "hash": "sha256-wX1LB4yuBRFM4fmdSsH6jBlCch9uCHXV9uFTxnz2blQ=",
@@ -269,5 +273,5 @@
       "url": "brotliloader.min.js"
     }
   ],
-  "version": "gofUjUEm"
+  "version": "oDkVDKH\/"
 };
