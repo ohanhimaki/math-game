@@ -1,4 +1,5 @@
 ﻿@page "/quiz"
+@using System.Text.Json
 @using System.Text.Json.Serialization
 @using MathGame.Web.Models.Quiz
 @inject QuizService QuizService
@@ -13,12 +14,19 @@
     else
     {
             
-        <MudSelect T="QuizFileInfo" @bind-Value="_activeQuiz" Label="Select a Quiz" Variant="Variant.Outlined" Class="mb-4">
+        <MudSelect Disabled="_files.Count > 0" Clearable T="QuizFileInfo" @bind-Value="_activeQuiz" Label="Select a Quiz" Variant="Variant.Outlined" Class="mb-4">
             @foreach (var quiz in Quizzes)
             {
                 <MudSelectItem Value="@quiz">@quiz.title</MudSelectItem>
             }
         </MudSelect>
+    <MudFileUpload T="IBrowserFile" FilesChanged="UploadFiles">
+        <ActivatorContent>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ImportFromFile">
+            Import Quiz
+        </MudButton>
+        </ActivatorContent>
+    </MudFileUpload>
         <MudTextField T="string" Label="Quiz Type" Variant="Variant.Outlined" @bind-Value="@_playerNames" ReadOnly Class="mb-4"/>
         
         <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="() => StartGame()">
@@ -37,6 +45,15 @@
     private RenderFragment? _gameFragment;
     private string _playerNames = string.Empty;
 
+    IList<IBrowserFile> _files = new List<IBrowserFile>();
+
+    private void UploadFiles(IBrowserFile file)
+    {
+        _activeQuiz = null; // Reset active quiz when a new file is uploaded
+        _files.Clear();
+        _files.Add(file);
+    }
+
     protected override async Task OnInitializedAsync()
     {
         Quizzes = await QuizService.LoadQuizzesAsync();
@@ -45,39 +62,71 @@
 
     public List<QuizFileInfo> Quizzes { get; set; } = new();
 
+    public async void ImportFromFile()
+    {
+        
+    }
+
     public async Task StartGame()
     {
-        switch (_activeQuiz.valueType.ToLowerInvariant())
+        if (_activeQuiz is not null)
         {
-            case "int":
-                var intQuiz = await QuizService.LoadQuizByFilenameAsync<int>(_activeQuiz.filename);
-                var intGame = new QuizGame<int>(intQuiz);
-                _gameFragment = builder =>
-                {
-                    builder.OpenComponent(0, typeof(RunQuizGame<int>));
-                    builder.AddAttribute(1, "Game", intGame);
-                    builder.CloseComponent();
-                };
-                break;
+            switch (_activeQuiz.valueType.ToLowerInvariant())
+            {
+                case "int":
+                    var intQuiz = await QuizService.LoadQuizByFilenameAsync<int>(_activeQuiz.filename);
+                    var intGame = new QuizGame<int>(intQuiz);
+                    _gameFragment = builder =>
+                    {
+                        builder.OpenComponent(0, typeof(RunQuizGame<int>));
+                        builder.AddAttribute(1, "Game", intGame);
+                        builder.CloseComponent();
+                    };
+                    break;
 
-            case "date":
-                var strQuiz = await QuizService.LoadQuizByFilenameAsync<DateOnly>(_activeQuiz.filename);
-                var strGame = new QuizGame<DateOnly>(strQuiz);
-                _gameFragment = builder =>
-                {
-                    builder.OpenComponent(0, typeof(RunQuizGame<DateOnly>));
-                    builder.AddAttribute(1, "Game", strGame);
-                    builder.CloseComponent();
-                };
-                break;
+                case "date":
+                    var strQuiz = await QuizService.LoadQuizByFilenameAsync<DateOnly>(_activeQuiz.filename);
+                    var strGame = new QuizGame<DateOnly>(strQuiz);
+                    _gameFragment = builder =>
+                    {
+                        builder.OpenComponent(0, typeof(RunQuizGame<DateOnly>));
+                        builder.AddAttribute(1, "Game", strGame);
+                        builder.CloseComponent();
+                    };
+                    break;
 
-            default:
-                // virheellinen tyyppi
-                _gameFragment = builder =>
+                default:
+                    // virheellinen tyyppi
+                    _gameFragment = builder => { builder.AddContent(0, $"Tuntematon tyyppi: {_activeQuiz.valueType}"); };
+                    break;
+            }
+        }
+
+        if (_files.Count > 0)
+        {
+            var file = _files.FirstOrDefault();
+            using var stream = file?.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10 MB max size
+            using var reader = new StreamReader(stream);
+            var json = await reader.ReadToEndAsync();
+            try
+            {
+                var quiz = JsonSerializer.Deserialize<Quiz<int>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (quiz != null)
                 {
-                    builder.AddContent(0, $"Tuntematon tyyppi: {_activeQuiz.valueType}");
-                };
-                break;
+                    var game = new QuizGame<int>(quiz);
+                    _gameFragment = builder =>
+                    {
+                        builder.OpenComponent(0, typeof(RunQuizGame<int>));
+                        builder.AddAttribute(1, "Game", game);
+                        builder.CloseComponent();
+                    };
+                }
+            }
+            catch (JsonException ex)
+            {
+                // Handle JSON parsing error
+                Console.WriteLine($"JSON parsing error: {ex.Message}");
+            }
         }
     }
 

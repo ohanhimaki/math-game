@@ -1,0 +1,86 @@
+﻿@page "/GenerateQuiz"
+@using System.Text.Json
+@using MathGame.Web.Models.Quiz
+@using Microsoft.JSInterop
+
+<h3>Luo uusi tietovisa</h3>
+
+<MudPaper Class="p-4 mb-4">
+    <MudTextField Label="ID" @bind-Value="QuizId" />
+    <MudTextField Label="Otsikko" @bind-Value="QuizTitle" />
+    <MudTextField Label="Kuvaus" @bind-Value="QuizDescription" />
+    <MudCheckBox @bind-Value="ShowAnswer" Label="Näytä oikeat vastaukset pelissä" />
+    <MudSelect Label="Arvotyyppi" @bind-Value="ValueType" Variant="Variant.Outlined" Class="mt-2">
+        @foreach(var type in ValueTypes)
+        {
+            <MudSelectItem Value="@type">@type</MudSelectItem>
+        }
+    </MudSelect>
+</MudPaper>
+
+<MudPaper Class="p-4 mb-4">
+    <MudText Typo="Typo.h6">Lisää uusi kortti</MudText>
+    <MudTextField Label="Teksti" @bind-Value="NewText"/>
+    <MudNumericField Label="Arvo" @bind-Value="NewValue"/>
+    <MudButton OnClick="AddItem" Variant="Variant.Filled" Color="Color.Primary" Class="mt-2">Lisää</MudButton>
+</MudPaper>
+
+<MudPaper Class="p-4 mb-4">
+    <MudText Typo="Typo.h6">Kortit</MudText>
+    <MudList T="string">
+        @foreach (var item in Items)
+        {
+            <MudListItem>
+                @item.text (@item.value)
+            </MudListItem>
+        }
+    </MudList>
+</MudPaper>
+
+<MudButton OnClick="SaveToJson" Variant="Variant.Filled" Color="Color.Success">Tallenna JSON-tiedostona</MudButton>
+
+@code {
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+    
+    public List<string> ValueTypes { get; set; } = new() { "int", "date" };
+    string QuizId = "quiz-id";
+    string QuizTitle = "Uusi tietovisa";
+    string QuizDescription = "";
+string ValueType = "";
+    bool ShowAnswer = true;
+
+    string NewText = "";
+    int NewValue;
+
+    List<QuizItem<int>> Items = new();
+
+    void AddItem()
+    {
+        if (!string.IsNullOrWhiteSpace(NewText))
+        {
+            Items.Add(new QuizItem<int> { text = NewText, value = NewValue });
+            NewText = "";
+            NewValue = 0;
+        }
+        
+        StateHasChanged();
+    }
+
+    async Task SaveToJson()
+    {
+        var quiz = new Quiz<int>
+        {
+            id = QuizId,
+            title = QuizTitle,
+            description = QuizDescription,
+            showAnswer = ShowAnswer,
+            items = Items.ToArray(),
+            valueType = ValueType
+        };
+
+        var json = JsonSerializer.Serialize(quiz, new JsonSerializerOptions { WriteIndented = true });
+
+        var fileName = $"{QuizId}.json";
+        await JS.InvokeVoidAsync("downloadFile", fileName, json);
+    }
+}

@@ -6,6 +6,7 @@ public class Quiz<T> where T : IComparable<T>
     public string title { get; set; }
     public string description { get; set; }
     public bool showAnswer { get; set; }
+    public string valueType { get; set; } 
     public QuizItem<T>[] items { get; set; }
 }
 
