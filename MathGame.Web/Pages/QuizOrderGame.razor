@@ -69,12 +69,13 @@
 
     public async Task StartGame()
     {
-        if (_activeQuiz is not null)
+        if (_activeQuiz?.filename is not null)
         {
-            switch (_activeQuiz.valueType.ToLowerInvariant())
+            switch (_activeQuiz.valueType?.ToLowerInvariant())
             {
                 case "int":
                     var intQuiz = await QuizService.LoadQuizByFilenameAsync<int>(_activeQuiz.filename);
+                    if (intQuiz is null) return;
                     var intGame = new QuizGame<int>(intQuiz);
                     _gameFragment = builder =>
                     {
@@ -86,6 +87,7 @@
 
                 case "date":
                     var strQuiz = await QuizService.LoadQuizByFilenameAsync<DateOnly>(_activeQuiz.filename);
+                    if (strQuiz is null) return;
                     var strGame = new QuizGame<DateOnly>(strQuiz);
                     _gameFragment = builder =>
                     {
@@ -105,7 +107,8 @@
         if (_files.Count > 0)
         {
             var file = _files.FirstOrDefault();
-            using var stream = file?.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10 MB max size
+            if (file is null) return;
+            using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10 MB max size
             using var reader = new StreamReader(stream);
             var json = await reader.ReadToEndAsync();
             try

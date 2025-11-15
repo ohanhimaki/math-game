@@ -15,13 +15,19 @@
 
     @foreach (var player in Game.Players)
     {
-        <MudTabPanel Text="@player.Name">
+        
+        <MudTabPanel Text="@player.Name" Badge="@player.Cards.Count.ToString()" BadgeColor="Color.Primary">
             <MudPaper Class="p-4">
 
                 <MudPaper Class="mt-4 p-2">
                     @if (CurrentItem is not null)
                     {
-                        <MudText Typo="Typo.h5"> Korttisi: @CurrentItem.text</MudText>
+                      var songAutoplayUrl = CurrentItem.Uri + "?autoplay=1";
+                        <MudText> @player.Cards.Count.ToString()</MudText>
+                        <MudText Typo="Typo.h5">Toista kappale</MudText>
+                        <MudButton Href="@($"https://open.spotify.com/track/{CurrentItem.Uri.Split(':').Last()}")" Target="_blank" Disabled="CurrentItem.Uri == null">Open in Spotify Web</MudButton>
+                        <MudButton Href="@songAutoplayUrl" Target="_blank" Disabled="CurrentItem.Uri == null">Open in Spotify Desktop</MudButton>
+
                     }
                     else
                     {
