@@ -4,33 +4,33 @@
 
 
 <MudPaper Elevation="4" Class="p-4 mb-4">
-    <MudText Typo="Typo.h2"> @Game.QuizTitle</MudText>
-    <MudText Typo="Typo.subtitle1"> @Game.QuizDescription</MudText>
-    <MudText>Kortteja jäljellä: @Game.TotalQuestionsLeft / @Game.TotalQuestions</MudText>
-</MudPaper>
+    <MudGrid>
+        @* Column 1: Quiz Title and Description *@
+        <MudItem xs="12" md="4">
+            <MudText Typo="Typo.h2">@Game.QuizTitle</MudText>
+            <MudText Typo="Typo.subtitle1">@Game.QuizDescription</MudText>
+            <MudText>Kortteja jäljellä: @Game.TotalQuestionsLeft / @Game.TotalQuestions</MudText>
+        </MudItem>
 
-@* Nykyisen kappaleen alue *@
-@if (CurrentItem is not null && !string.IsNullOrEmpty(CurrentItem.Uri))
-{
-    var trackId = CurrentItem.Uri.Split(':').Last();
-    var spotifyWebUrl = $"https://open.spotify.com/track/{trackId}";
-    var spotifyDesktopUrl = CurrentItem.Uri;
-    var qrCodeUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={Uri.EscapeDataString(spotifyWebUrl)}";
+        @* Column 2: Current Song and Buttons *@
+        <MudItem xs="12" md="4">
+            @if (CurrentItem is not null && !string.IsNullOrEmpty(CurrentItem.Uri))
+            {
+                var trackId = CurrentItem.Uri.Split(':').Last();
+                var spotifyWebUrl = $"https://open.spotify.com/track/{trackId}";
+                var spotifyDesktopUrl = CurrentItem.Uri;
 
-    <MudPaper Elevation="4" Class="p-4 mb-4">
-        <MudText Typo="Typo.h5" Class="mb-3">🎵 Nykyinen kappale</MudText>
-
-        <MudGrid>
-            <MudItem xs="12" md="8">
+                <MudText Typo="Typo.h5" Class="mb-3">🎵 Nykyinen kappale</MudText>
                 <MudText Typo="Typo.body2" Class="mb-2">Avaa Spotify kuunnellaksesi kappaletta:</MudText>
 
-                <MudStack Row Class="mt-2" Spacing="2">
+                <MudStack Spacing="2">
                     <MudButton
                         Href="@spotifyWebUrl"
                         Target="_blank"
                         Variant="Variant.Filled"
                         Color="Color.Success"
-                        StartIcon="@Icons.Material.Filled.Language">
+                        StartIcon="@Icons.Material.Filled.Language"
+                        FullWidth="true">
                         Spotify Web
                     </MudButton>
 
@@ -39,7 +39,8 @@
                         Target="_blank"
                         Variant="Variant.Filled"
                         Color="Color.Primary"
-                        StartIcon="@Icons.Material.Filled.DesktopWindows">
+                        StartIcon="@Icons.Material.Filled.DesktopWindows"
+                        FullWidth="true">
                         Spotify Desktop
                     </MudButton>
                 </MudStack>
@@ -47,15 +48,23 @@
                 <MudText Typo="Typo.caption" Class="mt-3" Color="Color.Info">
                     💡 Vinkki: Käytä Spotify Web -linkkiä mobiililaitteilla tai Spotify Desktop -linkkiä tietokoneella.
                 </MudText>
-            </MudItem>
+            }
+        </MudItem>
 
-            <MudItem xs="12" md="4" Class="d-flex flex-column align-center">
+        @* Column 3: QR Code *@
+        <MudItem xs="12" md="4" Class="d-flex flex-column align-center justify-center">
+            @if (CurrentItem is not null && !string.IsNullOrEmpty(CurrentItem.Uri))
+            {
+                var trackId = CurrentItem.Uri.Split(':').Last();
+                var spotifyWebUrl = $"https://open.spotify.com/track/{trackId}";
+                var qrCodeUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={Uri.EscapeDataString(spotifyWebUrl)}";
+
                 <MudText Typo="Typo.body2" Class="mb-2">Tai skannaa QR-koodi:</MudText>
                 <MudImage Src="@qrCodeUrl" Alt="QR Code for Spotify" Width="200" Height="200" Class="rounded" />
-            </MudItem>
-        </MudGrid>
-    </MudPaper>
-}
+            }
+        </MudItem>
+    </MudGrid>
+</MudPaper>
 
 @* Pelaajat riveittäin *@
 @foreach (var player in Game.Players)
@@ -109,7 +118,7 @@
 
                     <MudCard Style="min-width: 150px; max-width: 150px;">
                         <MudCardContent>
-                            <MudText Typo="Typo.h4" Align="Align.Center">@item.value</MudText>
+                            <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Primary">@item.value</MudText>
                             <MudText Typo="Typo.body2" Align="Align.Center" Style="font-size: 0.75rem;">@item.text</MudText>
                         </MudCardContent>
                     </MudCard>
