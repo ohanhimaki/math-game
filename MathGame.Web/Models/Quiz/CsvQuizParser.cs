@@ -29,7 +29,7 @@ namespace MathGame.Web.Models.Quiz
                         {
                             text = $"{r.Song} by {r.Artist}",
                             value = int.Parse(r.Album_Date.AsSpan(0, 4)),
-                            Uri = !string.IsNullOrEmpty(r.Spotify_Track_Id) ? $"spotify:track:{r.Spotify_Track_Id}" : null
+                            Uri = !string.IsNullOrEmpty(r.Spotify_Track_Id) ? $"spotify:track:{r.Spotify_Track_Id}:play" : null
                         }).ToArray()
                 };
 
