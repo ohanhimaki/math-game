@@ -1,80 +1,59 @@
 ﻿@using MathGame.Web.Models.Quiz
-@using MathGame.Web.Services
 @typeparam T where T : IComparable<T>
 @inject ISnackbar SnackBar
-@inject SpotifyService SpotifyService
 
 
 <MudPaper Elevation="4" Class="p-4 mb-4">
     <MudText Typo="Typo.h2"> @Game.QuizTitle</MudText>
     <MudText Typo="Typo.subtitle1"> @Game.QuizDescription</MudText>
     <MudText>Kortteja jäljellä: @Game.TotalQuestionsLeft / @Game.TotalQuestions</MudText>
-
-    @* Spotify Authentication *@
-    <MudPaper Elevation="2" Class="p-3 mt-3">
-        <MudText Typo="Typo.h6" Class="mb-2">Spotify Autentikointi</MudText>
-        @if (string.IsNullOrEmpty(_accessToken))
-        {
-            <MudStack Spacing="2">
-                <MudTextField @bind-Value="_clientId" Label="Client ID" Variant="Variant.Outlined" />
-                <MudTextField @bind-Value="_clientSecret" Label="Client Secret" Variant="Variant.Outlined" InputType="InputType.Password" />
-                <MudButton OnClick="AuthenticateSpotify" Variant="Variant.Filled" Color="Color.Success" Disabled="@_isAuthenticating">
-                    @if (_isAuthenticating)
-                    {
-                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
-                        <MudText Class="ml-2">Autentikoidaan...</MudText>
-                    }
-                    else
-                    {
-                        <MudText>Hae Access Token</MudText>
-                    }
-                </MudButton>
-            </MudStack>
-        }
-        else
-        {
-            <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
-                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" />
-                <MudText Color="Color.Success">Autentikoitu onnistuneesti</MudText>
-            </MudStack>
-        }
-    </MudPaper>
-
-    @* Spotify device selection *@
-    @if (!string.IsNullOrEmpty(_accessToken))
-    {
-        <MudStack Row Class="mt-3" AlignItems="AlignItems.Center">
-            <MudButton OnClick="LoadDevices" Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small">
-                Päivitä laitteet
-            </MudButton>
-            @if (_devices != null && _devices.Length > 0)
-            {
-                <MudSelect T="string" @bind-Value="_selectedDeviceId" Label="Valitse Spotify laite" Variant="Variant.Outlined" Dense="true">
-                    @foreach (var device in _devices)
-                    {
-                        <MudSelectItem T="string" Value="@device.Id">@device.Name (@device.Type)</MudSelectItem>
-                    }
-                </MudSelect>
-                <MudCheckBox @bind-Value="_autoPlay" Label="Automaattinen soitto" Color="Color.Primary" />
-            }
-            else
-            {
-                <MudText Color="Color.Warning" Typo="Typo.body2">Ei laitteita saatavilla. Varmista että Spotify on käynnissä.</MudText>
-            }
-        </MudStack>
-    }
 </MudPaper>
 
 @* Nykyisen kappaleen alue *@
 @if (CurrentItem is not null && !string.IsNullOrEmpty(CurrentItem.Uri))
 {
-    var songAutoplayUrl = CurrentItem.Uri + "?autoplay=1";
+    var trackId = CurrentItem.Uri.Split(':').Last();
+    var spotifyWebUrl = $"https://open.spotify.com/track/{trackId}";
+    var spotifyDesktopUrl = CurrentItem.Uri;
+    var qrCodeUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={Uri.EscapeDataString(spotifyWebUrl)}";
+
     <MudPaper Elevation="4" Class="p-4 mb-4">
-        <MudText Typo="Typo.h5">Nykyinen kappale</MudText>
-        <MudStack Row Class="mt-2">
-            <MudButton Href="@($"https://open.spotify.com/track/{CurrentItem.Uri.Split(':').Last()}")" Target="_blank" Disabled="CurrentItem.Uri == null" Variant="Variant.Filled" Color="Color.Primary">Avaa Spotify Webissä</MudButton>
-            <MudButton Href="@songAutoplayUrl" Target="_blank" Disabled="CurrentItem.Uri == null" Variant="Variant.Filled" Color="Color.Secondary">Avaa Spotify Desktopissa</MudButton>
-        </MudStack>
+        <MudText Typo="Typo.h5" Class="mb-3">🎵 Nykyinen kappale</MudText>
+
+        <MudGrid>
+            <MudItem xs="12" md="8">
+                <MudText Typo="Typo.body2" Class="mb-2">Avaa Spotify kuunnellaksesi kappaletta:</MudText>
+
+                <MudStack Row Class="mt-2" Spacing="2">
+                    <MudButton
+                        Href="@spotifyWebUrl"
+                        Target="_blank"
+                        Variant="Variant.Filled"
+                        Color="Color.Success"
+                        StartIcon="@Icons.Material.Filled.Language">
+                        Spotify Web
+                    </MudButton>
+
+                    <MudButton
+                        Href="@spotifyDesktopUrl"
+                        Target="_blank"
+                        Variant="Variant.Filled"
+                        Color="Color.Primary"
+                        StartIcon="@Icons.Material.Filled.DesktopWindows">
+                        Spotify Desktop
+                    </MudButton>
+                </MudStack>
+
+                <MudText Typo="Typo.caption" Class="mt-3" Color="Color.Info">
+                    💡 Vinkki: Käytä Spotify Web -linkkiä mobiililaitteilla tai Spotify Desktop -linkkiä tietokoneella.
+                </MudText>
+            </MudItem>
+
+            <MudItem xs="12" md="4" Class="d-flex flex-column align-center">
+                <MudText Typo="Typo.body2" Class="mb-2">Tai skannaa QR-koodi:</MudText>
+                <MudImage Src="@qrCodeUrl" Alt="QR Code for Spotify" Width="200" Height="200" Class="rounded" />
+            </MudItem>
+        </MudGrid>
     </MudPaper>
 }
 
@@ -163,20 +142,12 @@
     </MudButton>
 }
 
+
 @code {
     [Parameter] public required QuizGame<T> Game { get; set; }
 
     private QuizItem<T>? CurrentItem;
     private bool _answerGiven = false;
-    private Device[]? _devices;
-    private string? _selectedDeviceId;
-    private bool _autoPlay = true;
-
-    // Spotify authentication fields
-    private string _clientId = "";
-    private string _clientSecret = "";
-    private string _accessToken = "";
-    private bool _isAuthenticating = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -214,92 +185,11 @@
         await base.OnAfterRenderAsync(firstRender);
     }
 
-    private async Task AuthenticateSpotify()
-    {
-        if (string.IsNullOrWhiteSpace(_clientId) || string.IsNullOrWhiteSpace(_clientSecret))
-        {
-            SnackBar.Add("Syötä Client ID ja Client Secret", Severity.Warning);
-            return;
-        }
-
-        _isAuthenticating = true;
-        StateHasChanged();
-
-        try
-        {
-            var tokenResponse = await SpotifyService.AuthenticateAsync(_clientId, _clientSecret);
-
-            if (tokenResponse != null && !string.IsNullOrEmpty(tokenResponse.AccessToken))
-            {
-                _accessToken = tokenResponse.AccessToken;
-                SnackBar.Add("Autentikointi onnistui!", Severity.Success);
-
-                // Automatically load devices after successful authentication
-                await LoadDevices();
-            }
-            else
-            {
-                SnackBar.Add("Autentikointi epäonnistui. Tarkista Client ID ja Client Secret.", Severity.Error);
-            }
-        }
-        catch (Exception ex)
-        {
-            SnackBar.Add($"Virhe autentikoinnissa: {ex.Message}", Severity.Error);
-        }
-        finally
-        {
-            _isAuthenticating = false;
-            StateHasChanged();
-        }
-    }
-
-    private async Task LoadDevices()
-    {
-        try
-        {
-            var devicesResponse = await SpotifyService.GetAvailableDevicesAsync();
-            _devices = devicesResponse?.Devices;
-
-            if (_devices != null && _devices.Length > 0)
-            {
-                // Select the first active device or just the first device
-                var activeDevice = _devices.FirstOrDefault(d => d.Is_Active);
-                _selectedDeviceId = activeDevice?.Id ?? _devices.First().Id;
-                SnackBar.Add($"Löydettiin {_devices.Length} laitetta", Severity.Success);
-            }
-            else
-            {
-                SnackBar.Add("Ei laitteita saatavilla. Käynnistä Spotify.", Severity.Warning);
-            }
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            SnackBar.Add($"Virhe ladattaessa laitteita: {ex.Message}", Severity.Error);
-        }
-    }
-
-    private async Task DrawNext()
+    private Task DrawNext()
     {
         CurrentItem = Game.GetRandomQuestion();
         _answerGiven = false;
-
-        // Automaattinen soitto jos käytössä
-        if (_autoPlay && CurrentItem != null && !string.IsNullOrEmpty(CurrentItem.Uri) && !string.IsNullOrEmpty(_selectedDeviceId))
-        {
-            try
-            {
-                var success = await SpotifyService.PlayTrackAsync(CurrentItem.Uri, _selectedDeviceId);
-                if (!success)
-                {
-                    SnackBar.Add("Kappaleen soitto epäonnistui", Severity.Warning);
-                }
-            }
-            catch (Exception ex)
-            {
-                SnackBar.Add($"Virhe soittaessa kappaletta: {ex.Message}", Severity.Error);
-            }
-        }
+        return Task.CompletedTask;
     }
 
     private Task SetHere(Player<T> player, QuizItem<T>? prev, QuizItem<T>? next)
