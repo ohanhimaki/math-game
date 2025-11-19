@@ -86,7 +86,12 @@
                 <MudText Color="Color.Success">Pisteet: @player.Cards.Count</MudText>
                 @if (player.FailedCards.Count > 0)
                 {
-                    <MudText Color="Color.Error">Väärät: @player.FailedCards.Count</MudText>
+                    <MudButton OnClick="() => ShowFailedCardsHistory(player)" 
+                               Variant="Variant.Text" 
+                               Color="Color.Error" 
+                               Size="Size.Small">
+                        Väärät: @player.FailedCards.Count
+                    </MudButton>
                 }
             </MudStack>
         </MudStack>
@@ -151,12 +156,115 @@
     </MudButton>
 }
 
+@* Dialogi vastauksen tulokselle *@
+<MudDialog @bind-Visible="_showResultDialog" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h4" Align="Align.Center">
+            @if (_lastAnswerCorrect)
+            {
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Large" />
+                <text> Oikein!</text>
+            }
+            else
+            {
+                <MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Error" Size="Size.Large" />
+                <text> Väärin!</text>
+            }
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="3" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h5" Align="Align.Center">@_lastAnswerText</MudText>
+            <MudText Typo="Typo.h6" Align="Align.Center" Color="Color.Primary">
+                Arvo: @_lastAnswerValue
+            </MudText>
+            @if (!string.IsNullOrEmpty(_lastAnswerUri))
+            {
+                var trackId = _lastAnswerUri.Split(':').Last();
+                var spotifyWebUrl = $"https://open.spotify.com/track/{trackId}";
+                <MudButton Href="@spotifyWebUrl" 
+                          Target="_blank" 
+                          Variant="Variant.Filled" 
+                          Color="Color.Success" 
+                          StartIcon="@Icons.Material.Filled.MusicNote">
+                    Kuuntele Spotifyssa
+                </MudButton>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseResultDialog" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Size="Size.Large">
+            Jatka
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@* Dialogi väärien vastausten historialle *@
+<MudDialog @bind-Visible="_showFailedHistoryDialog" Options="_historyDialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h5">
+            @_selectedPlayer?.Name - Väärät vastaukset
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (_selectedPlayer?.FailedCards.Count > 0)
+        {
+            <MudList T="string">
+                @foreach (var card in _selectedPlayer.FailedCards)
+                {
+                    <MudListItem T="string">
+                        <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                            <MudStack Spacing="1">
+                                <MudText Typo="Typo.body1"><strong>@card.text</strong></MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Primary">Arvo: @card.value</MudText>
+                            </MudStack>
+                            @if (!string.IsNullOrEmpty(card.Uri))
+                            {
+                                var trackId = card.Uri.Split(':').Last();
+                                var spotifyWebUrl = $"https://open.spotify.com/track/{trackId}";
+                                <MudIconButton Href="@spotifyWebUrl" 
+                                             Target="_blank" 
+                                             Icon="@Icons.Material.Filled.MusicNote" 
+                                             Color="Color.Success" 
+                                             Size="Size.Small" />
+                            }
+                        </MudStack>
+                    </MudListItem>
+                    <MudDivider />
+                }
+            </MudList>
+        }
+        else
+        {
+            <MudText>Ei vääriä vastauksia</MudText>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseFailedHistoryDialog" Variant="Variant.Filled" Color="Color.Primary">
+            Sulje
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
 
 @code {
     [Parameter] public required QuizGame<T> Game { get; set; }
 
     private QuizItem<T>? CurrentItem;
     private bool _answerGiven = false;
+    
+    // Tulosdialogi
+    private bool _showResultDialog = false;
+    private bool _lastAnswerCorrect = false;
+    private string _lastAnswerText = "";
+    private string _lastAnswerValue = "";
+    private string _lastAnswerUri = "";
+    private DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true };
+    
+    // Historian dialogi
+    private bool _showFailedHistoryDialog = false;
+    private Player<T>? _selectedPlayer;
+    private DialogOptions _historyDialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -210,22 +318,48 @@
 
         var result = player.CheckOrderGuess(CurrentItem, prev, next);
 
+        // Tallenna vastauksen tiedot dialogia varten
+        _lastAnswerCorrect = result;
+        _lastAnswerText = CurrentItem.text ?? "";
+        _lastAnswerValue = CurrentItem.value?.ToString() ?? "";
+        _lastAnswerUri = CurrentItem.Uri ?? "";
+
         if (result)
         {
             player.AddCard(CurrentItem);
             player.SortCards();
-            SnackBar.Add($"Oikein! Kortti: {CurrentItem.text} (Arvo: {CurrentItem.value})", Severity.Success);
         }
         else
         {
-            SnackBar.Add($"Väärin! Kortti: {CurrentItem.text} (Arvo: {CurrentItem.value})", Severity.Error);
             player.AddFailedCard(CurrentItem);
         }
 
+        // Näytä iso dialogi tuloksesta
+        _showResultDialog = true;
         CurrentItem = null;
         _answerGiven = true;
         StateHasChanged();
         return Task.CompletedTask;
+    }
+    
+    private void CloseResultDialog()
+    {
+        _showResultDialog = false;
+        StateHasChanged();
+    }
+    
+    private void ShowFailedCardsHistory(Player<T> player)
+    {
+        _selectedPlayer = player;
+        _showFailedHistoryDialog = true;
+        StateHasChanged();
+    }
+    
+    private void CloseFailedHistoryDialog()
+    {
+        _showFailedHistoryDialog = false;
+        _selectedPlayer = null;
+        StateHasChanged();
     }
 
     private async Task NextPlayerTurn()
