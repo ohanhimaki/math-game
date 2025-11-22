@@ -1,6 +1,9 @@
 ﻿@using MathGame.Web.Models.Quiz
+@using Microsoft.JSInterop
 @typeparam T where T : IComparable<T>
 @inject ISnackbar SnackBar
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
 
 
 <MudPaper Elevation="4" Class="p-4 mb-4">
@@ -10,6 +13,9 @@
             <MudText Typo="Typo.h2">@Game.QuizTitle</MudText>
             <MudText Typo="Typo.subtitle1">@Game.QuizDescription</MudText>
             <MudText>Kortteja jäljellä: @Game.TotalQuestionsLeft / @Game.TotalQuestions</MudText>
+            <MudText Typo="Typo.caption" Color="Color.Info" Class="mt-2">
+                ⌨️ Nuolet: Valitse | Space/Enter: Vahvista/Jatka | W: Web | D: Desktop
+            </MudText>
         </MudItem>
 
         @* Column 2: Current Song and Buttons *@
@@ -31,7 +37,7 @@
                         Color="Color.Success"
                         StartIcon="@Icons.Material.Filled.Language"
                         FullWidth="true">
-                        Spotify Web
+                        Spotify Web <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Style="color: white;">W</MudChip>
                     </MudButton>
 
                     <MudButton
@@ -41,7 +47,7 @@
                         Color="Color.Primary"
                         StartIcon="@Icons.Material.Filled.DesktopWindows"
                         FullWidth="true">
-                        Spotify Desktop
+                        Spotify Desktop <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Style="color: white;">D</MudChip>
                     </MudButton>
                 </MudStack>
 
@@ -61,10 +67,13 @@
             {
                 var trackId = CurrentItem.Uri.Split(':').Last();
                 var spotifyWebUrl = $"https://open.spotify.com/track/{trackId}";
-                var qrCodeUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={Uri.EscapeDataString(spotifyWebUrl)}";
+                // Using MudBlazor theme colors: Primary (594ae2) and Secondary (00c853 green)
+                var qrCodeUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=594ae2&bgcolor=ffffff&data={Uri.EscapeDataString(spotifyWebUrl)}";
 
                 <MudText Typo="Typo.body2" Class="mb-2">Tai skannaa QR-koodi:</MudText>
-                <MudImage Src="@qrCodeUrl" Alt="QR Code for Spotify" Width="200" Height="200" Class="rounded" />
+                <MudPaper Elevation="3" Class="pa-2" Style="background-color: white;">
+                    <MudImage Src="@qrCodeUrl" Alt="QR Code for Spotify" Width="200" Height="200" />
+                </MudPaper>
             }
         </MudItem>
     </MudGrid>
@@ -101,18 +110,20 @@
         </MudStack>
 
         @* Pelaajan kortit horisontaalisesti *@
-        <MudStack Row Class="mt-3" Style="overflow-x: auto; flex-wrap: nowrap;">
+        <MudStack Row Class="mt-3" Style="overflow-x: auto; flex-wrap: nowrap; position: relative; padding-left: 20px;">
             @* Aseta tähän -painike ennen ensimmäistä korttia *@
             @if (isActivePlayer && CurrentItem is not null)
             {
                 var placementKey = $"{player.Name}_null";
                 var isActivePlacement = _activePlacementKey == placementKey;
-                <MudIconButton
-                    OnClick="() => TogglePlacement(player, placementKey, null, player.Cards.FirstOrDefault())"
-                    Icon="@(isActivePlacement ? Icons.Material.Filled.AddCircle : Icons.Material.Outlined.AddCircleOutline)"
-                    Color="@(isActivePlacement ? Color.Primary : Color.Default)"
-                    Size="Size.Large"
-                    Style="align-self: center; margin: 0 -8px; z-index: 10; " />
+                <div style="position: relative; width: 0; display: flex; align-items: center; z-index: 10;">
+                    <MudIconButton
+                        OnClick="() => TogglePlacement(player, placementKey, null, player.Cards.FirstOrDefault())"
+                        Icon="@(isActivePlacement ? Icons.Material.Filled.AddCircle : Icons.Material.Outlined.AddCircleOutline)"
+                        Color="Color.Secondary"
+                        Size="Size.Large"
+                        Style="margin-left: -20px;" />
+                </div>
             }
 
             @if (player.Cards.Count == 0)
@@ -141,12 +152,14 @@
                         var placementKey = $"{player.Name}_{prev.id}";
                         var isActivePlacement = _activePlacementKey == placementKey;
 
-                        <MudIconButton
-                            OnClick="() => TogglePlacement(player, placementKey, prev, next)"
-                            Icon="@(isActivePlacement ? Icons.Material.Filled.AddCircle : Icons.Material.Outlined.AddCircleOutline)"
-                            Color="@(isActivePlacement ? Color.Primary : Color.Default)"
-                            Size="Size.Large"
-                            Style="align-self: center; margin: 0 -8px; z-index: 10;" />
+                        <div style="position: relative; width: 0; display: flex; align-items: center; z-index: 10;">
+                            <MudIconButton
+                                OnClick="() => TogglePlacement(player, placementKey, prev, next)"
+                                Icon="@(isActivePlacement ? Icons.Material.Filled.AddCircle : Icons.Material.Outlined.AddCircleOutline)"
+                                Color="Color.Secondary"
+                                Size="Size.Large"
+                                Style="margin-left: -20px;" />
+                        </div>
                     }
                 }
             }
@@ -158,7 +171,7 @@
 @if (CurrentItem is null && _answerGiven)
 {
     <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="NextPlayerTurn" FullWidth="true" Size="Size.Large">
-        Seuraava pelaaja
+        Seuraava pelaaja <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Style="color: white;">Space</MudChip>
     </MudButton>
 }
 
@@ -217,7 +230,7 @@
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="CloseResultDialog" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Size="Size.Large">
-            Jatka
+            Jatka <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Style="color: white;">Space</MudChip>
         </MudButton>
     </DialogActions>
 </MudDialog>
@@ -299,6 +312,11 @@
     
     // Asettamisen tila
     private string? _activePlacementKey = null;
+    
+    // Näppäimistötila
+    private int _currentPlacementIndex = 0;
+    private List<(string key, Player<T> player, QuizItem<T>? prev, QuizItem<T>? next)> _availablePlacements = new();
+    private DotNetObjectReference<RunQuizGame<T>>? _dotNetRef;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -331,9 +349,160 @@
 
             // Nosta ensimmäinen kortti ensimmäiselle pelaajalle
             await DrawNext();
+            
+            // Setup keyboard listener
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await SetupKeyboardListener();
+            
             StateHasChanged();
         }
         await base.OnAfterRenderAsync(firstRender);
+    }
+    
+    private async Task SetupKeyboardListener()
+    {
+        // Try to setup keyboard listener with retries
+        for (int i = 0; i < 5; i++)
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("setupKeyboardListener", _dotNetRef);
+                return; // Success!
+            }
+            catch (JSException)
+            {
+                if (i < 4) // Don't delay on last attempt
+                {
+                    await Task.Delay(100);
+                }
+            }
+        }
+    }
+    
+    [JSInvokable]
+    public void HandleKeyPress(string key)
+    {
+        // Handle Space in result dialog
+        if (_showResultDialog && key == " ")
+        {
+            CloseResultDialog();
+            return;
+        }
+        
+        // Handle Space to advance to next player
+        if (CurrentItem == null && _answerGiven && key == " ")
+        {
+            _ = NextPlayerTurn(); // Fire and forget
+            return;
+        }
+        
+        if (CurrentItem == null || _showResultDialog) return;
+        
+        // Handle Spotify shortcuts
+        if (key == "w" || key == "W")
+        {
+            OpenSpotifyWeb();
+            return;
+        }
+        if (key == "d" || key == "D")
+        {
+            OpenSpotifyDesktop();
+            return;
+        }
+        
+        UpdateAvailablePlacements();
+        
+        if (_availablePlacements.Count == 0) return;
+        
+        switch (key)
+        {
+            case "ArrowLeft":
+                _currentPlacementIndex = (_currentPlacementIndex - 1 + _availablePlacements.Count) % _availablePlacements.Count;
+                UpdateActivePlacement();
+                break;
+            case "ArrowRight":
+                _currentPlacementIndex = (_currentPlacementIndex + 1) % _availablePlacements.Count;
+                UpdateActivePlacement();
+                break;
+            case " ":
+            case "Enter":
+                if (_activePlacementKey != null)
+                {
+                    var placement = _availablePlacements[_currentPlacementIndex];
+                    SetHere(placement.player, placement.prev, placement.next);
+                }
+                break;
+        }
+    }
+    
+    private void OpenSpotifyWeb()
+    {
+        if (CurrentItem != null && !string.IsNullOrEmpty(CurrentItem.Uri))
+        {
+            var trackId = CurrentItem.Uri.Split(':').Last();
+            var spotifyWebUrl = $"https://open.spotify.com/track/{trackId}";
+            JSRuntime.InvokeVoidAsync("open", spotifyWebUrl, "_blank");
+        }
+    }
+    
+    private void OpenSpotifyDesktop()
+    {
+        if (CurrentItem != null && !string.IsNullOrEmpty(CurrentItem.Uri))
+        {
+            JSRuntime.InvokeVoidAsync("open", CurrentItem.Uri, "_blank");
+        }
+    }
+    
+    private void UpdateAvailablePlacements()
+    {
+        _availablePlacements.Clear();
+        
+        var currentPlayer = Game.CurrentPlayer;
+        if (currentPlayer == null) return;
+        
+        // First placement (before all cards)
+        var firstKey = $"{currentPlayer.Name}_null";
+        _availablePlacements.Add((firstKey, currentPlayer, null, currentPlayer.Cards.FirstOrDefault()));
+        
+        // Placements between and after cards
+        for (int i = 0; i < currentPlayer.Cards.Count; i++)
+        {
+            var prev = currentPlayer.Cards[i];
+            var next = i + 1 < currentPlayer.Cards.Count ? currentPlayer.Cards[i + 1] : null;
+            var key = $"{currentPlayer.Name}_{prev.id}";
+            _availablePlacements.Add((key, currentPlayer, prev, next));
+        }
+        
+        // Ensure current index is valid
+        if (_currentPlacementIndex >= _availablePlacements.Count)
+        {
+            _currentPlacementIndex = 0;
+        }
+    }
+    
+    private void UpdateActivePlacement()
+    {
+        if (_availablePlacements.Count > 0 && _currentPlacementIndex < _availablePlacements.Count)
+        {
+            _activePlacementKey = _availablePlacements[_currentPlacementIndex].key;
+            StateHasChanged();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_dotNetRef != null)
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("removeKeyboardListener");
+            }
+            catch (JSException)
+            {
+                // Ignore if function doesn't exist
+            }
+            _dotNetRef.Dispose();
+        }
     }
 
     private Task DrawNext()
@@ -341,6 +510,7 @@
         CurrentItem = Game.GetRandomQuestion();
         _answerGiven = false;
         _activePlacementKey = null;
+        _currentPlacementIndex = 0;
         return Task.CompletedTask;
     }
     
