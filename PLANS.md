@@ -11,6 +11,7 @@ The objective is to create new game modes, specifically focusing on a Spotify Pl
 **Status: Implemented and Ready for Testing**
 
 This game mode allows players to guess the release year of songs from a Spotify playlist. The game is created by uploading a CSV file exported from tools like Chosic.
+(add link to spotify playlist exporter: https://www.chosic.com/spotify-playlist-exporter/)
 
 ### Implementation Details:
 
@@ -39,8 +40,13 @@ This game mode allows players to guess the release year of songs from a Spotify 
 
 ### Next Steps / Future Enhancements:
 
-*   **Error Handling:** Improve error handling and user feedback for CSV parsing failures (e.g., malformed CSV, missing columns).
-*   **Input Validation:** Add more robust validation for player names and other inputs.
-*   **Game Rules:** Implement the full game rules (e.g., scoring, turn management, handling collected cards) within the `QuizGame<T>` and `Player<T>` classes.
-*   **UI Polish:** Enhance the UI for a better user experience, including visual feedback for correct/incorrect guesses and game state.
-*   **Spotify Link Robustness:** Consider adding a fallback or more user-friendly message if a Spotify Track Id is missing from the CSV.
+*   **Error Handling:** Improve error handling -> When user makes guess and popup appears, let game master change answer of card (year value) and recheck if guess was correct. This is because some songs are from new release albums etc
+*   **UI Polish:** Enhance the UI for a better user experience, make guess input not take extra space: use plus icons that need to be activated (then icon turns filled ) and after selecting it again (or keyboard enter/space) it makes guess. this makes it easier for game master to as "you mean tihs? Wna lock?" Also those new plus icons: can those be ilmpelemted so that they dont make line content any wider (so maybe higher z value but horizontal minus padding or something)
+
+### Small changes:
+
+- Make "Correct!/Wrong!" popup screen more clear, maybe use background or big banner with green/red. remove "kuuntele spotifyssa" button from that popup
+
+
+
+

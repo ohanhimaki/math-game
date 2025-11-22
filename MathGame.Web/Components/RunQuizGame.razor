@@ -49,6 +49,10 @@
                     💡 Vinkki: Käytä Spotify Web -linkkiä mobiililaitteilla tai Spotify Desktop -linkkiä tietokoneella.
                 </MudText>
             }
+            @if (CurrentItem is null && _answerGiven)
+            {
+                <MudText Typo="Typo.h5" Color="Color.Tertiary">Odotetaan seuraavaa kierrosta...</MudText>
+            }
         </MudItem>
 
         @* Column 3: QR Code *@
@@ -101,13 +105,14 @@
             @* Aseta tähän -painike ennen ensimmäistä korttia *@
             @if (isActivePlayer && CurrentItem is not null)
             {
-                <MudButton
-                    OnClick="() => SetHere(player, null, player.Cards.FirstOrDefault())"
-                    Variant="Variant.Outlined"
-                    Color="Color.Primary"
-                    Style="min-width: 80px; height: 120px;">
-                    Aseta<br/>Tähän
-                </MudButton>
+                var placementKey = $"{player.Name}_null";
+                var isActivePlacement = _activePlacementKey == placementKey;
+                <MudIconButton
+                    OnClick="() => TogglePlacement(player, placementKey, null, player.Cards.FirstOrDefault())"
+                    Icon="@(isActivePlacement ? Icons.Material.Filled.AddCircle : Icons.Material.Outlined.AddCircleOutline)"
+                    Color="@(isActivePlacement ? Color.Primary : Color.Default)"
+                    Size="Size.Large"
+                    Style="align-self: center; margin: 0 -8px; z-index: 10; " />
             }
 
             @if (player.Cards.Count == 0)
@@ -133,14 +138,15 @@
                     {
                         var prev = player.Cards[cardIndex];
                         var next = cardIndex + 1 < player.Cards.Count ? player.Cards[cardIndex + 1] : null;
+                        var placementKey = $"{player.Name}_{prev.id}";
+                        var isActivePlacement = _activePlacementKey == placementKey;
 
-                        <MudButton
-                            OnClick="() => SetHere(player, prev, next)"
-                            Variant="Variant.Outlined"
-                            Color="Color.Primary"
-                            Style="min-width: 80px; height: 120px;">
-                            Aseta<br/>Tähän
-                        </MudButton>
+                        <MudIconButton
+                            OnClick="() => TogglePlacement(player, placementKey, prev, next)"
+                            Icon="@(isActivePlacement ? Icons.Material.Filled.AddCircle : Icons.Material.Outlined.AddCircleOutline)"
+                            Color="@(isActivePlacement ? Color.Primary : Color.Default)"
+                            Size="Size.Large"
+                            Style="align-self: center; margin: 0 -8px; z-index: 10;" />
                     }
                 }
             }
@@ -159,37 +165,54 @@
 @* Dialogi vastauksen tulokselle *@
 <MudDialog @bind-Visible="_showResultDialog" Options="_dialogOptions">
     <TitleContent>
-        <MudText Typo="Typo.h4" Align="Align.Center">
-            @if (_lastAnswerCorrect)
-            {
-                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Large" />
-                <text> Oikein!</text>
-            }
-            else
-            {
-                <MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Error" Size="Size.Large" />
-                <text> Väärin!</text>
-            }
-        </MudText>
+        <MudPaper Class="pa-4" Style="@(_lastAnswerCorrect ? "background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);" : "background: linear-gradient(135deg, #f44336 0%, #ef5350 100%);")">
+            <MudText Typo="Typo.h3" Align="Align.Center" Style="color: white; font-weight: bold;">
+                @if (_lastAnswerCorrect)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Large" Style="color: white;" />
+                    <text> OIKEIN!</text>
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Cancel" Size="Size.Large" Style="color: white;" />
+                    <text> VÄÄRIN!</text>
+                }
+            </MudText>
+        </MudPaper>
     </TitleContent>
     <DialogContent>
-        <MudStack Spacing="3" AlignItems="AlignItems.Center">
+        <MudStack Spacing="3" AlignItems="AlignItems.Center" Class="pt-4">
             <MudText Typo="Typo.h5" Align="Align.Center">@_lastAnswerText</MudText>
-            <MudText Typo="Typo.h6" Align="Align.Center" Color="Color.Primary">
-                Arvo: @_lastAnswerValue
-            </MudText>
-            @if (!string.IsNullOrEmpty(_lastAnswerUri))
-            {
-                var trackId = _lastAnswerUri.Split(':').Last();
-                var spotifyWebUrl = $"https://open.spotify.com/track/{trackId}";
-                <MudButton Href="@spotifyWebUrl" 
-                          Target="_blank" 
-                          Variant="Variant.Filled" 
-                          Color="Color.Success" 
-                          StartIcon="@Icons.Material.Filled.MusicNote">
-                    Kuuntele Spotifyssa
-                </MudButton>
-            }
+            <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                <MudText Typo="Typo.h6" Align="Align.Center" Color="Color.Primary">
+                    Arvo:
+                </MudText>
+                @if (_isEditingValue)
+                {
+                    <MudTextField @bind-Value="_editedValue" 
+                                  Variant="Variant.Outlined" 
+                                  Margin="Margin.Dense"
+                                  Style="width: 100px;" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Check" 
+                                   Color="Color.Success" 
+                                   OnClick="SaveEditedValue"
+                                   Size="Size.Small" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Close" 
+                                   Color="Color.Error" 
+                                   OnClick="CancelEditValue"
+                                   Size="Size.Small" />
+                }
+                else
+                {
+                    <MudText Typo="Typo.h6" Align="Align.Center" Color="Color.Primary">
+                        @_lastAnswerValue
+                    </MudText>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                   Color="Color.Primary" 
+                                   OnClick="StartEditValue"
+                                   Size="Size.Small" />
+                }
+            </MudStack>
         </MudStack>
     </DialogContent>
     <DialogActions>
@@ -265,6 +288,17 @@
     private bool _showFailedHistoryDialog = false;
     private Player<T>? _selectedPlayer;
     private DialogOptions _historyDialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+    
+    // Arvon muokkaus
+    private bool _isEditingValue = false;
+    private string _editedValue = "";
+    private QuizItem<T>? _lastAnswerItem;
+    private Player<T>? _lastAnswerPlayer;
+    private QuizItem<T>? _lastAnswerPrev;
+    private QuizItem<T>? _lastAnswerNext;
+    
+    // Asettamisen tila
+    private string? _activePlacementKey = null;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -306,6 +340,23 @@
     {
         CurrentItem = Game.GetRandomQuestion();
         _answerGiven = false;
+        _activePlacementKey = null;
+        return Task.CompletedTask;
+    }
+    
+    private Task TogglePlacement(Player<T> player, string placementKey, QuizItem<T>? prev, QuizItem<T>? next)
+    {
+        if (_activePlacementKey == placementKey)
+        {
+            // Second click - make the guess
+            SetHere(player, prev, next);
+        }
+        else
+        {
+            // First click - activate this placement
+            _activePlacementKey = placementKey;
+            StateHasChanged();
+        }
         return Task.CompletedTask;
     }
 
@@ -323,6 +374,10 @@
         _lastAnswerText = CurrentItem.text ?? "";
         _lastAnswerValue = CurrentItem.value?.ToString() ?? "";
         _lastAnswerUri = CurrentItem.Uri ?? "";
+        _lastAnswerItem = CurrentItem;
+        _lastAnswerPlayer = player;
+        _lastAnswerPrev = prev;
+        _lastAnswerNext = next;
 
         if (result)
         {
@@ -338,8 +393,77 @@
         _showResultDialog = true;
         CurrentItem = null;
         _answerGiven = true;
+        _activePlacementKey = null;
         StateHasChanged();
         return Task.CompletedTask;
+    }
+    
+    private void StartEditValue()
+    {
+        _editedValue = _lastAnswerValue;
+        _isEditingValue = true;
+        StateHasChanged();
+    }
+    
+    private void CancelEditValue()
+    {
+        _isEditingValue = false;
+        StateHasChanged();
+    }
+    
+    private void SaveEditedValue()
+    {
+        if (_lastAnswerItem == null || _lastAnswerPlayer == null)
+        {
+            _isEditingValue = false;
+            StateHasChanged();
+            return;
+        }
+
+        // Try to parse the edited value
+        try
+        {
+            var converter = System.ComponentModel.TypeDescriptor.GetConverter(typeof(T));
+            if (converter != null && converter.CanConvertFrom(typeof(string)))
+            {
+                var newValue = (T?)converter.ConvertFromString(_editedValue);
+                if (newValue != null)
+                {
+                    _lastAnswerItem.value = newValue;
+                    _lastAnswerValue = _editedValue;
+                    
+                    // Recheck the answer
+                    var newResult = _lastAnswerPlayer.CheckOrderGuess(_lastAnswerItem, _lastAnswerPrev, _lastAnswerNext);
+                    
+                    if (newResult != _lastAnswerCorrect)
+                    {
+                        // Answer changed from wrong to correct or vice versa
+                        if (newResult)
+                        {
+                            // Now correct - move from failed to cards
+                            _lastAnswerPlayer.FailedCards.Remove(_lastAnswerItem);
+                            _lastAnswerPlayer.AddCard(_lastAnswerItem);
+                            _lastAnswerPlayer.SortCards();
+                        }
+                        else
+                        {
+                            // Now incorrect - move from cards to failed
+                            _lastAnswerPlayer.Cards.Remove(_lastAnswerItem);
+                            _lastAnswerPlayer.AddFailedCard(_lastAnswerItem);
+                        }
+                        
+                        _lastAnswerCorrect = newResult;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // If parsing fails, just cancel
+        }
+        
+        _isEditingValue = false;
+        StateHasChanged();
     }
     
     private void CloseResultDialog()
