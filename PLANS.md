@@ -86,10 +86,10 @@ This game mode allows players to guess the release year of songs from a Spotify 
 
 ### Future Enhancements:
 
-*   Consider adding keyboard shortcuts for editing answer values
-*   Potential for sound effects on correct/incorrect answers
-*   Leaderboard or statistics tracking across sessions
-*   Export game results to CSV
+*   Ability to press button on players/teams card to CELEBRATE WINNER (show also all teams ordered)
+*   Show artist + song allways as: artist - songname (no songname by artist)
+*   fix spotify web player link
+*   make qr code to match darkmode
 
 
 
