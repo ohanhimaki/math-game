@@ -1,7 +1,8 @@
-﻿function downloadFile(filename, text) {
-    const blob = new Blob([text], { type: 'application/json' });
-    const link = document.createElement("a");
-    link.download = filename;
-    link.href = URL.createObjectURL(blob);
+function downloadFile(fileName, content) {
+    var link = document.createElement('a');
+    link.href = "data:text/json;charset=utf-8," + encodeURIComponent(content);
+    link.download = fileName;
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
 }
