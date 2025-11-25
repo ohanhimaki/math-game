@@ -1,0 +1,58 @@
+@page "/spotify-quiz-player"
+@using MathGame.Web.Models.Quiz
+@using MathGame.Web.Services
+@using System.IO
+@inject QuizFactory QuizFactory
+@inject ISnackbar Snackbar
+
+@if (_game == null)
+{
+    <h2>Upload a CSV File</h2>
+    <EditForm Model="@_uploadModel" OnValidSubmit="StartGame">
+        <DataAnnotationsValidator />
+        <InputFile OnChange="OnFileChanged" />
+        <MudTextField @bind-Value="_uploadModel.PlayerNames" Label="Player Names (comma separated)" Variant="Variant.Outlined" />
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary">Start Game</MudButton>
+    </EditForm>
+}
+else
+{
+    <RunQuizGame Game="_game" />
+}
+
+@code {
+    private QuizGame<int>? _game;
+    private UploadModel _uploadModel = new();
+    private IBrowserFile? _file;
+
+    private void OnFileChanged(InputFileChangeEventArgs e)
+    {
+        _file = e.File;
+    }
+
+    private async Task StartGame()
+    {
+        if (_file == null)
+        {
+            Snackbar.Add("Please select a file.", Severity.Error);
+            return;
+        }
+
+        using var stream = _file.OpenReadStream();
+        using var reader = new StreamReader(stream);
+        var csvContent = await reader.ReadToEndAsync();
+
+        _game = QuizFactory.CreateGameFromCsv(csvContent, _uploadModel.PlayerNames);
+
+        if (_game == null)
+        {
+            Snackbar.Add("Could not create game from the CSV file. Please check the file format.", Severity.Error);
+        }
+        StateHasChanged();
+    }
+
+    public class UploadModel
+    {
+        public string PlayerNames { get; set; } = "Test1, Test2";
+    }
+}

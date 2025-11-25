@@ -77,7 +77,7 @@ else
 }
 
 @code {
-    [Parameter] public Game Game { get; set; }
+    [Parameter] public Game Game { get; set; } = default!;
     private Round? _activeRound;
     private string _userInput = string.Empty;
     private Random _random = new Random();

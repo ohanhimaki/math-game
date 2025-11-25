@@ -1,0 +1,86 @@
+@page "/csv-quiz-creator"
+@using System.IO
+@using System.Text.Json
+@using CsvHelper
+@using System.Globalization
+@using MathGame.Web.Models.Quiz
+@using Microsoft.JSInterop
+@using System.ComponentModel.DataAnnotations
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+
+<h1>Create Quiz from CSV</h1>
+
+<EditForm Model="@_model" OnValidSubmit="CreateQuiz">
+    <DataAnnotationsValidator />
+    <MudCard>
+        <MudCardContent>
+            <MudTextField @bind-Value="_model.QuizName"
+                          For="@(() => _model.QuizName)"
+                          Label="Quiz Name"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense" />
+            <InputFile OnChange="OnFileChanged" />
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Create Quiz</MudButton>
+        </MudCardActions>
+    </MudCard>
+</EditForm>
+
+@code {
+    private readonly CreateQuizModel _model = new();
+    private IBrowserFile? _file;
+
+    private void OnFileChanged(InputFileChangeEventArgs e)
+    {
+        _file = e.File;
+    }
+
+    private async Task CreateQuiz()
+    {
+        if (_file == null)
+        {
+            Snackbar.Add("Please select a file.", Severity.Error);
+            return;
+        }
+
+        try
+        {
+            using var reader = new StreamReader(_file.OpenReadStream());
+            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+            var records = csv.GetRecords<SpotifyTrack>().ToList();
+
+            var quiz = new Quiz<int>
+            {
+                title = _model.QuizName,
+                description = $"A quiz about Spotify songs from the playlist {_model.QuizName}",
+                items = records
+                    .Where(r => !string.IsNullOrEmpty(r.Album_Date) && r.Album_Date.Length >= 4)
+                    .Select(r => new QuizItem<int>
+                {
+                    text = $"{r.Song} by {r.Artist}",
+                    value = int.Parse(r.Album_Date!.Split('-')[0])
+                }).ToArray()
+            };
+
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            var json = JsonSerializer.Serialize(quiz, options);
+            var fileName = $"{_model.QuizName}.json";
+
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, json);
+
+            Snackbar.Add($"Quiz '{_model.QuizName}' created successfully with {records.Count} questions.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error creating quiz: {ex.Message}", Severity.Error);
+        }
+    }
+
+    public class CreateQuizModel
+    {
+        [Required]
+        public string? QuizName { get; set; }
+    }
+}

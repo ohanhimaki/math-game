@@ -4,20 +4,21 @@ public class QuizGame<T> where T : IComparable<T>
 {
     private readonly Quiz<T> _quiz;
     
-    public string QuizTitle => _quiz.title;
-    public string QuizDescription => _quiz.description;
+    public string? QuizTitle => _quiz.title;
+    public string? QuizDescription => _quiz.description;
     
 
     public QuizGame(Quiz<T> quiz, string playerNames = "", int players = 1)
     {
         _quiz = quiz;
-        AvailableQuestions = _quiz.items.ToList();
+        AvailableQuestions = _quiz.items?.ToList() ?? new List<QuizItem<T>>();
 
         ShowValue = quiz.showAnswer;
         
         var playerNamesArray = playerNames.Split(',');
         if (playerNamesArray.Length > 0 && playerNamesArray[0].Trim() != "")
         {
+            players = 0;
             foreach (var name in playerNamesArray)
             {
                 Players.Add(new Player<T>
@@ -50,11 +51,13 @@ public class QuizGame<T> where T : IComparable<T>
     public bool ShowValue = false;
     private List<QuizItem<T>> AvailableQuestions;
     public int TotalQuestionsLeft => AvailableQuestions.Count;
-    public int TotalQuestions => _quiz.items.Length;
-    
+    public int TotalQuestions => _quiz.items?.Length ?? 0;
 
-    
-    // public Dictionary<int,List<QuizItem<T>>> PlayerCards { get; set; } = new(); 
+    public int CurrentPlayerIndex { get; private set; } = 0;
+    public Player<T>? CurrentPlayer => Players.Count > 0 ? Players[CurrentPlayerIndex] : null;
+
+
+    // public Dictionary<int,List<QuizItem<T>>> PlayerCards { get; set; } = new();
     public List<Player<T>> Players { get; set; } = new();
     
     public QuizItem<T>? GetRandomQuestion()
@@ -68,23 +71,27 @@ public class QuizGame<T> where T : IComparable<T>
         AvailableQuestions.RemoveAt(index);
         return question;
     }
-    
+
+    public void NextPlayer()
+    {
+        CurrentPlayerIndex = (CurrentPlayerIndex + 1) % Players.Count;
+    }
+
 }
 
 public class Player<T> where T : IComparable<T>
 {
-    public string Name { get; set; }
+    public string? Name { get; set; }
     public List<QuizItem<T>> Cards { get; set; } = new();
     public List<QuizItem<T>> FailedCards { get; set; } = new();
 
-    public bool CheckOrderQuess<T>(QuizItem<T>? currentItem, QuizItem<T>? prev, QuizItem<T>? next) where T : IComparable<T>
+    public bool CheckOrderGuess(QuizItem<T> currentItem, QuizItem<T>? prev, QuizItem<T>? next)
     {
-        if (currentItem == null) return false;
-
-        if (prev != null && currentItem.value.CompareTo(prev.value) <= 0)
+        if (currentItem.value == null) return false;
+        if (prev != null && prev.value != null && currentItem.value.CompareTo(prev.value) < 0)
             return false;
 
-        if (next != null && currentItem.value.CompareTo(next.value) >= 0)
+        if (next != null && next.value != null && currentItem.value.CompareTo(next.value) > 0)
             return false;
 
         return true;
@@ -98,7 +105,7 @@ public class Player<T> where T : IComparable<T>
     }
     public void SortCards()
     {
-        Cards.Sort((x, y) => x.value.CompareTo(y.value));
+        Cards.Sort((x, y) => x.value?.CompareTo(y.value) ?? 0);
     }
 
     public void AddFailedCard(QuizItem<T> currentItem) 
