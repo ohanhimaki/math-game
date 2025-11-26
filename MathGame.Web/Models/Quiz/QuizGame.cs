@@ -8,10 +8,11 @@ public class QuizGame<T> where T : IComparable<T>
     public string? QuizDescription => _quiz.description;
     
 
-    public QuizGame(Quiz<T> quiz, string playerNames = "", int players = 1)
+    public QuizGame(Quiz<T> quiz, string playerNames = "", int players = 1, int initialCards = 1)
     {
         _quiz = quiz;
         AvailableQuestions = _quiz.items?.ToList() ?? new List<QuizItem<T>>();
+        InitialCardsPerPlayer = initialCards;
 
         ShowValue = quiz.showAnswer;
         
@@ -49,6 +50,7 @@ public class QuizGame<T> where T : IComparable<T>
     }
 
     public bool ShowValue = false;
+    public int InitialCardsPerPlayer = 1;
     private List<QuizItem<T>> AvailableQuestions;
     public int TotalQuestionsLeft => AvailableQuestions.Count;
     public int TotalQuestions => _quiz.items?.Length ?? 0;

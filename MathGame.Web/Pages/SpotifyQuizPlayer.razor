@@ -10,9 +10,22 @@
     <h2>Upload a CSV File</h2>
     <EditForm Model="@_uploadModel" OnValidSubmit="StartGame">
         <DataAnnotationsValidator />
-        <InputFile OnChange="OnFileChanged" />
-        <MudTextField @bind-Value="_uploadModel.PlayerNames" Label="Player Names (comma separated)" Variant="Variant.Outlined" />
-        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary">Start Game</MudButton>
+        <MudStack Spacing="3">
+            <InputFile OnChange="OnFileChanged" />
+            <MudTextField @bind-Value="_uploadModel.PlayerNames" 
+                          Label="Player Names (comma separated)" 
+                          Variant="Variant.Outlined" />
+            <MudNumericField @bind-Value="_uploadModel.InitialCards" 
+                             Label="Initial cards per player" 
+                             Variant="Variant.Outlined" 
+                             Min="1" 
+                             Max="10" />
+            <MudButton ButtonType="ButtonType.Submit" 
+                       Variant="Variant.Filled" 
+                       Color="Color.Primary">
+                Start Game
+            </MudButton>
+        </MudStack>
     </EditForm>
 }
 else
@@ -42,7 +55,7 @@ else
         using var reader = new StreamReader(stream);
         var csvContent = await reader.ReadToEndAsync();
 
-        _game = QuizFactory.CreateGameFromCsv(csvContent, _uploadModel.PlayerNames);
+        _game = QuizFactory.CreateGameFromCsv(csvContent, _uploadModel.PlayerNames, _uploadModel.InitialCards);
 
         if (_game == null)
         {
@@ -54,5 +67,6 @@ else
     public class UploadModel
     {
         public string PlayerNames { get; set; } = "Test1, Test2";
+        public int InitialCards { get; set; } = 1;
     }
 }

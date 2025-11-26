@@ -18,6 +18,9 @@
             <MudText Typo="Typo.caption" Color="Color.Info" Class="mt-2">
                 ⌨️ Nuolet: Valitse | Space/Enter: Vahvista/Jatka | W: Web | D: Desktop
             </MudText>
+            <MudSwitch @bind-Value="_hideCardNames" Color="Color.Info" Class="mt-3">
+                Piilota kappaleiden nimet muilta pelaajilta
+            </MudSwitch>
         </MudItem>
 
         @* Column 2: Current Song and Buttons *@
@@ -81,7 +84,8 @@
     </MudGrid>
 </MudPaper>
 
-@* Pelaajat riveittäin *@
+@* Pelaajat riveittäin - scrollaava *@
+<div style="max-height: 60vh; overflow-y: auto; margin-bottom: 1rem;">
 @foreach (var player in Game.Players)
 {
     var isActivePlayer = Game.CurrentPlayer == player;
@@ -149,7 +153,10 @@
                     <MudCard Style="min-width: 150px; max-width: 150px;">
                         <MudCardContent>
                             <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Primary">@item.value</MudText>
-                            <MudText Typo="Typo.body2" Align="Align.Center" Style="font-size: 0.75rem;">@item.text</MudText>
+                            @if (isActivePlayer || !_hideCardNames)
+                            {
+                                <MudText Typo="Typo.body2" Align="Align.Center" Style="font-size: 0.75rem;">@item.text</MudText>
+                            }
                         </MudCardContent>
                     </MudCard>
 
@@ -158,23 +165,31 @@
                     {
                         var prev = player.Cards[cardIndex];
                         var next = cardIndex + 1 < player.Cards.Count ? player.Cards[cardIndex + 1] : null;
-                        var placementKey = $"{player.Name}_{prev.id}";
-                        var isActivePlacement = _activePlacementKey == placementKey;
+                        
+                        @* Piilota painike jos molemmat puolet ovat samaa arvoa *@
+                        var shouldShowButton = next == null || !Equals(prev.value, next.value);
+                        
+                        if (shouldShowButton)
+                        {
+                            var placementKey = $"{player.Name}_{prev.id}";
+                            var isActivePlacement = _activePlacementKey == placementKey;
 
-                        <div style="position: relative; width: 0; display: flex; align-items: center; z-index: 10;">
-                            <MudIconButton
-                                OnClick="() => TogglePlacement(player, placementKey, prev, next)"
-                                Icon="@(isActivePlacement ? Icons.Material.Filled.AddCircle : Icons.Material.Outlined.AddCircleOutline)"
-                                Color="Color.Secondary"
-                                Size="Size.Large"
-                                Style="margin-left: -20px;" />
-                        </div>
+                            <div style="position: relative; width: 0; display: flex; align-items: center; z-index: 10;">
+                                <MudIconButton
+                                    OnClick="() => TogglePlacement(player, placementKey, prev, next)"
+                                    Icon="@(isActivePlacement ? Icons.Material.Filled.AddCircle : Icons.Material.Outlined.AddCircleOutline)"
+                                    Color="Color.Secondary"
+                                    Size="Size.Large"
+                                    Style="margin-left: -20px;" />
+                            </div>
+                        }
                     }
                 }
             }
         </MudStack>
     </MudPaper>
 }
+</div>
 
 @* Seuraava pelaaja -painike *@
 @if (CurrentItem is null && _answerGiven)
@@ -403,6 +418,9 @@
     private DialogOptions _winnerDialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
     private string? _celebrationTrackId;
     
+    // Esitystila
+    private bool _hideCardNames = false;
+    
     // Arvon muokkaus
     private bool _isEditingValue = false;
     private string _editedValue = "";
@@ -436,16 +454,16 @@
 
             foreach (var gamePlayer in Game.Players)
             {
-                if (gamePlayer.Cards.Count() == 0)
+                // Draw initial cards for each player
+                for (int i = 0; i < Game.InitialCardsPerPlayer; i++)
                 {
-                    // If player has no cards, draw a card for them
                     var item = Game.GetRandomQuestion();
                     if (item is not null)
                     {
                         gamePlayer.AddCard(item);
-                        gamePlayer.SortCards();
                     }
                 }
+                gamePlayer.SortCards();
             }
 
             // Nosta ensimmäinen kortti ensimmäiselle pelaajalle
@@ -570,6 +588,13 @@
         {
             var prev = currentPlayer.Cards[i];
             var next = i + 1 < currentPlayer.Cards.Count ? currentPlayer.Cards[i + 1] : null;
+            
+            // Skip if prev and next have same value (no point placing between same years)
+            if (next != null && Equals(prev.value, next.value))
+            {
+                continue;
+            }
+            
             var key = $"{currentPlayer.Name}_{prev.id}";
             _availablePlacements.Add((key, currentPlayer, prev, next));
         }
