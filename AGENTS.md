@@ -1,8 +1,8 @@
 # AGENTS.md - Project Context for AI Agents
 
-**Last Updated:** 2024-11-26  
+**Last Updated:** 2025-11-26  
 **Project:** MathGame.Web - Multi-Game Web Application  
-**Technology Stack:** Blazor WebAssembly, C#, MudBlazor, .NET 8
+**Technology Stack:** Blazor WebAssembly, C#, MudBlazor, .NET 9
 
 ---
 
@@ -55,9 +55,12 @@ MathGame.Web/
 │   ├── SpotifyService.cs     # Spotify API client (legacy)
 │   └── QuizService.cs        # Quiz management
 ├── wwwroot/
-│   └── js/
-│       ├── keyboard.js       # Global keyboard event handler
-│       └── download.js       # File download helper
+│   ├── js/
+│   │   ├── keyboard.js       # Global keyboard event handler
+│   │   └── download.js       # File download helper
+│   └── spotify-quizzes/      # Preset CSV quiz files
+│       ├── suomi-musaa.csv
+│       └── hitster-suomi.csv
 ├── Program.cs                # DI configuration
 └── appsettings.json          # Configuration
 ```
@@ -69,24 +72,30 @@ MathGame.Web/
 ### 1. Spotify Playlist Quiz Game (Primary Feature)
 
 **Game Flow:**
-1. User uploads CSV file from [Chosic Spotify Playlist Exporter](https://www.chosic.com/spotify-playlist-exporter/)
-2. CSV is parsed into `QuizItem<int>` objects (song name, artist, year, Spotify URI)
-3. Players take turns placing cards in chronological order
-4. System validates placement and awards points for correct answers
+1. User selects a preset quiz from dropdown OR uploads custom CSV file
+2. Preset quizzes loaded from `wwwroot/spotify-quizzes/` via HttpClient
+3. CSV is parsed into `QuizItem<int>` objects (song name, artist, year, Spotify URI)
+4. Players configure initial cards per player (1-10, default: 1)
+5. Players take turns placing cards in chronological order
+6. System validates placement and awards points for correct answers
 
 **Key Components:**
-- **SpotifyQuizPlayer.razor**: Entry point, file upload
+- **SpotifyQuizPlayer.razor**: Entry point, preset selector & file upload
 - **RunQuizGame<T>.razor**: Generic game runner (supports any comparable type)
 - **CsvQuizParser**: Parses CSV with columns: Song, Artist, Album Date, Spotify Track Id
 
 **Game Mechanics:**
 - **Players**: Multiple players/teams supported (comma-separated names)
+- **Initial Cards**: Configurable 1-10 cards per player at game start
 - **Cards**: Each player builds a timeline of correctly placed songs
 - **Validation**: System checks if new card fits between adjacent cards
+- **Smart Placement**: Buttons hidden between cards with same value (no point guessing between same years)
 - **Failed Cards**: Tracked separately for review
 - **Winner Celebration**: Shows leaderboard with celebration song
 
 **User Interactions:**
+- **Preset Quizzes**: Radio button to select from `wwwroot/spotify-quizzes/*.csv`
+- **Custom Upload**: Alternative radio option for own CSV files
 - **Placement Selection**: Click + icons between cards or use arrow keys
 - **Two-click confirmation**: First click selects, second confirms
 - **Keyboard shortcuts**:
@@ -97,6 +106,7 @@ MathGame.Web/
 - **Value Editing**: Game master can correct release years in result dialog
 - **Spotify Integration**: QR codes + buttons to play songs
 - **Search Helper**: Button to Google search "release date {artist} - {song}"
+- **Presentation Mode**: Toggle to hide card names from non-active players (TV presentation)
 
 ### 2. Winner Celebration Feature
 
@@ -126,13 +136,22 @@ MathGame.Web/
 
 **Responsive Layout:**
 - 3-column grid: Quiz info, Current song, QR code
+- Scrollable player list (max-height: 60vh) - important for TV/projector display
 - Horizontal scrolling card timeline per player
 - Active player highlighted with border + chip
+- Top info and bottom buttons always visible
+
+**Presentation Mode:**
+- Toggle switch: "Piilota kappaleiden nimet muilta pelaajilta"
+- When enabled: Only active player sees card names
+- Other players see only years (perfect for TV display)
+- Prevents spoilers when displaying on shared screen
 
 **Accessibility:**
 - Visual keyboard hints (small white chips on buttons)
 - Always-active keyboard controls
 - Color-coded feedback (green/red)
+- Large text sizes for TV viewing (150px cards, Typo.h4 for years)
 
 ---
 
@@ -247,14 +266,19 @@ builder.Services.AddMudServices();
 
 ### Completed Features (from PLANS.md)
 - ✅ CSV file upload and parsing
+- ✅ Preset quiz selector from wwwroot/spotify-quizzes/
+- ✅ Configurable initial cards per player (1-10)
 - ✅ Multi-player support
 - ✅ Spotify integration (Web + Desktop links)
 - ✅ QR codes for mobile scanning
 - ✅ Answer value editing by game master
 - ✅ Full keyboard navigation
 - ✅ Failed cards history tracking
-- ✅ Winner celebration dialog
+- ✅ Winner celebration dialog with leaderboard
 - ✅ Google search helper for release dates
+- ✅ Smart placement (no buttons between same values)
+- ✅ Scrollable player list for better screen space
+- ✅ Presentation mode (hide card names toggle)
 
 ### Remaining Enhancement
 - ⚠️ Make QR code match dark mode
@@ -303,7 +327,7 @@ dotnet run
 ## Working with AI Agents
 
 ### Project Context
-- **Language**: C# 12, .NET 8, Blazor WebAssembly
+- **Language**: C# 12, .NET 9, Blazor WebAssembly
 - **UI Framework**: MudBlazor (prefer MudComponents over raw HTML)
 - **State**: Component-level state, no global state management
 - **Data flow**: Props down, events up (Blazor standard)
@@ -317,14 +341,16 @@ dotnet run
 
 ### Common Tasks
 - **Adding new quiz type**: Extend `QuizItem<T>` generic, create parser
+- **Adding preset quiz**: Place CSV in `wwwroot/spotify-quizzes/` and add filename to `_presetQuizzes` list in SpotifyQuizPlayer.razor
 - **UI changes**: Use MudBlazor components, maintain responsive layout
 - **Keyboard shortcuts**: Update `keyboard.js` and `HandleKeyPress()`
 - **Configuration**: Add to `appsettings.json`, inject `IConfiguration`
 
 ### Files to Know
-- **RunQuizGame.razor**: 780 lines, core game logic - tread carefully
+- **RunQuizGame.razor**: ~800 lines, core game logic - tread carefully
+- **SpotifyQuizPlayer.razor**: Preset selector and file upload logic
 - **CsvQuizParser.cs**: CSV → Quiz<int> conversion
-- **QuizGame.cs**: Game state and player logic
+- **QuizGame.cs**: Game state, player logic, initial cards configuration
 - **keyboard.js**: Global keyboard event handling
 
 ---
@@ -335,6 +361,7 @@ dotnet run
 - [Chosic Spotify Playlist Exporter](https://www.chosic.com/spotify-playlist-exporter/)
   - Exports playlists to CSV with required columns
   - Free to use, no authentication needed
+- **Optional**: Users can upload custom CSV files following the same format
 
 ### NuGet Packages
 - MudBlazor (UI components)
@@ -349,15 +376,18 @@ dotnet run
 2. **Spotify Links**: Desktop URIs may not work on all platforms
 3. **CSV Format**: Tightly coupled to Chosic export format
 4. **Browser Compatibility**: Requires modern browser with WebAssembly support
+5. **Preset List**: Hardcoded in component, not dynamically scanned from filesystem
 
 ---
 
 ## Future Considerations
 
 - Dark mode QR code generation
+- Dynamic preset quiz discovery (scan wwwroot/spotify-quizzes/ automatically)
 - Alternative CSV formats support
 - Offline play support (PWA)
 - Score persistence (local storage)
+- Game replay/history
 - Additional game modes (math games already scaffolded)
 
 ---

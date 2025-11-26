@@ -93,6 +93,7 @@ This game mode allows players to guess the release year of songs from a Spotify 
 *   ✅ Scrollable player list (max-height: 60vh) for better screen utilization
 *   ✅ Toggle to hide card names from non-active players (presentation mode)
 *   ✅ Hide placement buttons between cards with same value
+*   ✅ Preset CSV quiz selector from wwwroot/spotify-quizzes/
 *   make qr code to match darkmode
 *   ✅ Add button in result dialog to search for "release date {artist}-{songname}" to verify release year
 

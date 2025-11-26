@@ -4,29 +4,56 @@
 @using System.IO
 @inject QuizFactory QuizFactory
 @inject ISnackbar Snackbar
+@inject HttpClient HttpClient
 
 @if (_game == null)
 {
-    <h2>Upload a CSV File</h2>
-    <EditForm Model="@_uploadModel" OnValidSubmit="StartGame">
-        <DataAnnotationsValidator />
-        <MudStack Spacing="3">
-            <InputFile OnChange="OnFileChanged" />
-            <MudTextField @bind-Value="_uploadModel.PlayerNames" 
-                          Label="Player Names (comma separated)" 
-                          Variant="Variant.Outlined" />
-            <MudNumericField @bind-Value="_uploadModel.InitialCards" 
-                             Label="Initial cards per player" 
-                             Variant="Variant.Outlined" 
-                             Min="1" 
-                             Max="10" />
-            <MudButton ButtonType="ButtonType.Submit" 
-                       Variant="Variant.Filled" 
-                       Color="Color.Primary">
-                Start Game
-            </MudButton>
-        </MudStack>
-    </EditForm>
+    <MudPaper Class="p-4 mb-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Valitse Quiz</MudText>
+        
+        <EditForm Model="@_uploadModel" OnValidSubmit="StartGame">
+            <DataAnnotationsValidator />
+            <MudStack Spacing="3">
+                
+                @* Valinta: Valmis lista vai oma tiedosto *@
+                <MudRadioGroup @bind-Value="_uploadModel.SourceType">
+                    <MudRadio Value="@("preset")" Color="Color.Primary">Käytä valmista listaa</MudRadio>
+                    <MudRadio Value="@("upload")" Color="Color.Primary">Lataa oma CSV-tiedosto</MudRadio>
+                </MudRadioGroup>
+                
+                @if (_uploadModel.SourceType == "preset")
+                {
+                    <MudSelect @bind-Value="_uploadModel.SelectedPreset" 
+                               Label="Valitse valmis lista" 
+                               Variant="Variant.Outlined">
+                        @foreach (var preset in _presetQuizzes)
+                        {
+                            <MudSelectItem Value="@preset">@preset</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+                else
+                {
+                    <InputFile OnChange="OnFileChanged" />
+                }
+                
+                <MudTextField @bind-Value="_uploadModel.PlayerNames" 
+                              Label="Player Names (comma separated)" 
+                              Variant="Variant.Outlined" />
+                <MudNumericField @bind-Value="_uploadModel.InitialCards" 
+                                 Label="Initial cards per player" 
+                                 Variant="Variant.Outlined" 
+                                 Min="1" 
+                                 Max="10" />
+                <MudButton ButtonType="ButtonType.Submit" 
+                           Variant="Variant.Filled" 
+                           Color="Color.Primary"
+                           FullWidth="true">
+                    Start Game
+                </MudButton>
+            </MudStack>
+        </EditForm>
+    </MudPaper>
 }
 else
 {
@@ -37,6 +64,14 @@ else
     private QuizGame<int>? _game;
     private UploadModel _uploadModel = new();
     private IBrowserFile? _file;
+    private List<string> _presetQuizzes = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Scan for preset CSV files
+        _presetQuizzes = new List<string> { "suomi-musaa.csv", "hitster-suomi.csv" };
+        _uploadModel.SelectedPreset = _presetQuizzes.FirstOrDefault() ?? "";
+    }
 
     private void OnFileChanged(InputFileChangeEventArgs e)
     {
@@ -45,21 +80,46 @@ else
 
     private async Task StartGame()
     {
-        if (_file == null)
+        string csvContent;
+        
+        if (_uploadModel.SourceType == "preset")
         {
-            Snackbar.Add("Please select a file.", Severity.Error);
-            return;
+            // Load from wwwroot/spotify-quizzes
+            try
+            {
+                var response = await HttpClient.GetAsync($"spotify-quizzes/{_uploadModel.SelectedPreset}");
+                if (!response.IsSuccessStatusCode)
+                {
+                    Snackbar.Add($"Tiedostoa '{_uploadModel.SelectedPreset}' ei löytynyt.", Severity.Error);
+                    return;
+                }
+                csvContent = await response.Content.ReadAsStringAsync();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Virhe ladattaessa tiedostoa: {ex.Message}", Severity.Error);
+                return;
+            }
         }
+        else
+        {
+            // Load from uploaded file
+            if (_file == null)
+            {
+                Snackbar.Add("Valitse tiedosto.", Severity.Error);
+                return;
+            }
 
-        using var stream = _file.OpenReadStream();
-        using var reader = new StreamReader(stream);
-        var csvContent = await reader.ReadToEndAsync();
+            using var stream = _file.OpenReadStream();
+            using var reader = new StreamReader(stream);
+            csvContent = await reader.ReadToEndAsync();
+        }
 
         _game = QuizFactory.CreateGameFromCsv(csvContent, _uploadModel.PlayerNames, _uploadModel.InitialCards);
 
         if (_game == null)
         {
-            Snackbar.Add("Could not create game from the CSV file. Please check the file format.", Severity.Error);
+            Snackbar.Add("Virhe CSV-tiedoston käsittelyssä. Tarkista tiedoston muoto.", Severity.Error);
         }
         StateHasChanged();
     }
@@ -68,5 +128,7 @@ else
     {
         public string PlayerNames { get; set; } = "Test1, Test2";
         public int InitialCards { get; set; } = 1;
+        public string SourceType { get; set; } = "preset";
+        public string SelectedPreset { get; set; } = "";
     }
 }
