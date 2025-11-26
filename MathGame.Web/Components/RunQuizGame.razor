@@ -1,8 +1,10 @@
 ﻿@using MathGame.Web.Models.Quiz
 @using Microsoft.JSInterop
+@using Microsoft.Extensions.Configuration
 @typeparam T where T : IComparable<T>
 @inject ISnackbar SnackBar
 @inject IJSRuntime JSRuntime
+@inject IConfiguration Configuration
 @implements IAsyncDisposable
 
 
@@ -107,6 +109,13 @@
                     </MudButton>
                 }
             </MudStack>
+            <MudButton OnClick="ShowWinnerCelebration" 
+                       Variant="Variant.Filled" 
+                       Color="Color.Success" 
+                       StartIcon="@Icons.Material.Filled.EmojiEvents"
+                       Size="Size.Small">
+                Juhli voittajaa!
+            </MudButton>
         </MudStack>
 
         @* Pelaajan kortit horisontaalisesti *@
@@ -226,6 +235,22 @@
                                    Size="Size.Small" />
                 }
             </MudStack>
+            
+            @if (!string.IsNullOrEmpty(_lastAnswerText))
+            {
+                var searchQuery = $"release date {_lastAnswerText}";
+                var searchUrl = $"https://www.google.com/search?q={Uri.EscapeDataString(searchQuery)}";
+                
+                <MudButton
+                    Href="@searchUrl"
+                    Target="_blank"
+                    Variant="Variant.Outlined"
+                    Color="Color.Info"
+                    StartIcon="@Icons.Material.Filled.Search"
+                    Size="Size.Small">
+                    Tarkista julkaisuvuosi
+                </MudButton>
+            }
         </MudStack>
     </DialogContent>
     <DialogActions>
@@ -282,6 +307,77 @@
     </DialogActions>
 </MudDialog>
 
+@* Dialogi voittajan juhlalle *@
+<MudDialog @bind-Visible="_showWinnerDialog" Options="_winnerDialogOptions">
+    <TitleContent>
+        <MudPaper Class="pa-4" Style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);">
+            <MudText Typo="Typo.h3" Align="Align.Center" Style="color: #333; font-weight: bold;">
+                <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Size="Size.Large" Style="color: #333;" />
+                VOITTAJA!
+            </MudText>
+        </MudPaper>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="3" AlignItems="AlignItems.Center" Class="pt-4">
+            @foreach (var player in Game.Players.OrderByDescending(p => p.Cards.Count))
+            {
+                var isWinner = player == Game.Players.OrderByDescending(p => p.Cards.Count).First();
+                <MudPaper Elevation="@(isWinner ? 8 : 2)" Class="pa-3" Style="@(isWinner ? "background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); width: 100%;" : "width: 100%;")">
+                    <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                            @if (isWinner)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Warning" Size="Size.Large" />
+                            }
+                            <MudText Typo="@(isWinner ? Typo.h5 : Typo.h6)" Style="@(isWinner ? "font-weight: bold; color: #333;" : "")">
+                                @player.Name
+                            </MudText>
+                        </MudStack>
+                        <MudText Typo="@(isWinner ? Typo.h5 : Typo.h6)" Color="@(isWinner ? Color.Dark : Color.Success)" Style="@(isWinner ? "font-weight: bold;" : "")">
+                            @player.Cards.Count pistettä
+                        </MudText>
+                    </MudStack>
+                </MudPaper>
+            }
+            
+            @if (!string.IsNullOrEmpty(_celebrationTrackId))
+            {
+                var spotifyWebUrl = $"https://open.spotify.com/track/{_celebrationTrackId}";
+                var spotifyDesktopUrl = $"spotify:track:{_celebrationTrackId}";
+                
+                <MudDivider Class="my-3" />
+                
+                <MudText Typo="Typo.h6" Class="mb-2">🎉 Juhlakappale:</MudText>
+                
+                <MudStack Row Spacing="2">
+                    <MudButton
+                        Href="@spotifyWebUrl"
+                        Target="_blank"
+                        Variant="Variant.Filled"
+                        Color="Color.Success"
+                        StartIcon="@Icons.Material.Filled.Language">
+                        Spotify Web
+                    </MudButton>
+                    
+                    <MudButton
+                        Href="@spotifyDesktopUrl"
+                        Target="_blank"
+                        Variant="Variant.Filled"
+                        Color="Color.Primary"
+                        StartIcon="@Icons.Material.Filled.DesktopWindows">
+                        Spotify Desktop
+                    </MudButton>
+                </MudStack>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseWinnerDialog" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true">
+            Sulje
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
 
 @code {
     [Parameter] public required QuizGame<T> Game { get; set; }
@@ -301,6 +397,11 @@
     private bool _showFailedHistoryDialog = false;
     private Player<T>? _selectedPlayer;
     private DialogOptions _historyDialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+    
+    // Voittajan dialogi
+    private bool _showWinnerDialog = false;
+    private DialogOptions _winnerDialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+    private string? _celebrationTrackId;
     
     // Arvon muokkaus
     private bool _isEditingValue = false;
@@ -653,6 +754,21 @@
     {
         _showFailedHistoryDialog = false;
         _selectedPlayer = null;
+        StateHasChanged();
+    }
+    
+    private void ShowWinnerCelebration()
+    {
+        _celebrationTrackId = Configuration["CelebrationSong:TrackId"];
+        Console.WriteLine(_celebrationTrackId);
+        _celebrationTrackId = _celebrationTrackId ?? "7nwLYNM1LQWwwHLiHcm6Ai"; // fix, ei toimi Configuration jostain syystä?
+        _showWinnerDialog = true;
+        StateHasChanged();
+    }
+    
+    private void CloseWinnerDialog()
+    {
+        _showWinnerDialog = false;
         StateHasChanged();
     }
 

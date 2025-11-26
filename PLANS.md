@@ -86,10 +86,11 @@ This game mode allows players to guess the release year of songs from a Spotify 
 
 ### Future Enhancements:
 
-*   Ability to press button on players/teams card to CELEBRATE WINNER (show also all teams ordered)
-*   Show artist + song allways as: artist - songname (no songname by artist)
-*   fix spotify web player link
+*   ✅ Ability to press button on players/teams card to CELEBRATE WINNER (show also all teams ordered)
+*   ✅ Show artist + song always as: artist - songname (no songname by artist)
+*   ✅ Fix spotify web player link
 *   make qr code to match darkmode
+*   ✅ Add button in result dialog to search for "release date {artist}-{songname}" to verify release year
 
 
 
