@@ -1,6 +1,6 @@
 # AGENTS.md - Project Context for AI Agents
 
-**Last Updated:** 2025-11-26  
+**Last Updated:** 2025-11-27  
 **Project:** MathGame.Web - Multi-Game Web Application  
 **Technology Stack:** Blazor WebAssembly, C#, MudBlazor, .NET 9
 
@@ -60,7 +60,8 @@ MathGame.Web/
 │   │   └── download.js       # File download helper
 │   └── spotify-quizzes/      # Preset CSV quiz files
 │       ├── suomi-musaa.csv
-│       └── hitster-suomi.csv
+│       ├── hitster-suomi.csv
+│       └── Parhaat joulubiisit.csv
 ├── Program.cs                # DI configuration
 └── appsettings.json          # Configuration
 ```
@@ -129,9 +130,12 @@ MathGame.Web/
 
 **Visual Design:**
 - MudBlazor Material Design components
-- Primary color: Christmas Red (#c41e3a)
-- Secondary color: Christmas Green (#165b33)
-- QR codes with dynamic colors (adapts to dark/light mode)
+- **Christmas Theme**:
+  - Primary: Christmas Red (#c41e3a) - Used in AppBar and accents
+  - Secondary: Christmas Green (#165b33 light, #0d4020 dark)
+  - Dark mode: Red AppBar with dark backgrounds
+  - Light mode: Red AppBar with light backgrounds
+- QR codes with dynamic colors (Christmas Red on black/white based on mode)
 - Gradient dialogs: Green for correct, Red for wrong
 
 **Responsive Layout:**
@@ -270,7 +274,7 @@ builder.Services.AddMudServices();
 - ✅ Configurable initial cards per player (1-10)
 - ✅ Multi-player support
 - ✅ Spotify integration (Web + Desktop links)
-- ✅ QR codes for mobile scanning
+- ✅ QR codes for mobile scanning with dark mode support
 - ✅ Answer value editing by game master
 - ✅ Full keyboard navigation
 - ✅ Failed cards history tracking
@@ -279,9 +283,7 @@ builder.Services.AddMudServices();
 - ✅ Smart placement (no buttons between same values)
 - ✅ Scrollable player list for better screen space
 - ✅ Presentation mode (hide card names toggle)
-
-### Remaining Enhancement
-- ⚠️ Make QR code match dark mode
+- ✅ Christmas theme with red/green colors
 
 ---
 

@@ -103,6 +103,13 @@ This game mode allows players to guess the release year of songs from a Spotify 
 *   ✅ Hide placement buttons between cards with same value
 *   ✅ Preset CSV quiz selector from wwwroot/spotify-quizzes/
 *   ✅ Add button in result dialog to search for "release date {artist}-{songname}" to verify release year
+*   ✅ Christmas theme with red/green colors and dark mode support
+
+### Recent Updates (2025-11-27):
+*   ✅ QR code dark mode support - Christmas Red on black (dark) or white (light)
+*   ✅ Dark mode AppBar changed to Christmas Red
+*   ✅ Darker green secondary color in dark mode (#0d4020)
+*   ✅ Added "Parhaat joulubiisit.csv" to preset quizzes
 
 ## Generic Quiz Game (Non-Spotify)
 

@@ -69,7 +69,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         // Scan for preset CSV files
-        _presetQuizzes = new List<string> { "suomi-musaa.csv", "hitster-suomi.csv" };
+        _presetQuizzes = new List<string> { "suomi-musaa.csv", "hitster-suomi.csv", "Parhaat joulubiisit.csv" };
         _uploadModel.SelectedPreset = _presetQuizzes.FirstOrDefault() ?? "";
     }
 
