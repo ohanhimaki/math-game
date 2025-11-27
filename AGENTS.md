@@ -97,13 +97,15 @@ MathGame.Web/
 **User Interactions:**
 - **Preset Quizzes**: Radio button to select from `wwwroot/spotify-quizzes/*.csv`
 - **Custom Upload**: Alternative radio option for own CSV files
-- **Placement Selection**: Click + icons between cards or use arrow keys
-- **Two-click confirmation**: First click selects, second confirms
+- **Placement Selection**: Click + icons between cards or use keyboard shortcuts
+- **Two-click confirmation**: First click selects, second confirms (keyboard: select position then Space/Enter)
 - **Keyboard shortcuts**:
+  - `0-9`: Jump to placement position (0=first, 9=last or closest available)
   - `←/→`: Navigate placement positions
   - `Space/Enter`: Confirm placement / Close dialog / Next player
   - `W`: Open Spotify Web
   - `D`: Open Spotify Desktop
+- **Visual Position Indicators**: White numbered labels (0-9) shown on placement buttons for quick reference
 - **Value Editing**: Game master can correct release years in result dialog
 - **Spotify Integration**: QR codes + buttons to play songs
 - **Search Helper**: Button to Google search "release date {artist} - {song}"
@@ -153,9 +155,11 @@ MathGame.Web/
 
 **Accessibility:**
 - Visual keyboard hints (small white chips on buttons)
-- Always-active keyboard controls
+- Numbered position indicators (0-9) for quick verbal reference ("SPOT 3!")
+- Always-active keyboard controls with number key shortcuts
 - Color-coded feedback (green/red)
-- Large text sizes for TV viewing (150px cards, Typo.h4 for years)
+- Large text sizes for TV viewing (150px cards, Typo.h3 for answer text/values)
+- High contrast white indicator on selected placement position
 
 ---
 

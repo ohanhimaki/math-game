@@ -56,26 +56,32 @@ This game mode allows players to guess the release year of songs from a Spotify 
 *   ✅ Removed redundant Spotify button from result dialog
 
 #### Keyboard Navigation (Full Implementation)
+*   ✅ **Number keys (0-9)**: Jump directly to placement position (0=first position, 9=last/nearest)
 *   ✅ **Arrow keys (←/→)**: Navigate between placement positions
 *   ✅ **Space/Enter**: Confirm placement selection
 *   ✅ **Space**: Close result dialog and advance to next player
 *   ✅ **W key**: Open Spotify Web
 *   ✅ **D key**: Open Spotify Desktop
+*   ✅ Visual position indicators (0-9 white labels) on placement buttons
 *   ✅ Visual keyboard hints on buttons (small white chips)
+*   ✅ High contrast white indicator on selected position
 *   ✅ Always-active keyboard controls (no toggle needed)
 *   ✅ JavaScript interop with retry logic for reliable initialization
 
 #### Visual Improvements
-*   ✅ QR code with MudBlazor Primary color theme (violet)
+*   ✅ QR code with MudBlazor Primary color theme (violet) → Christmas Red
 *   ✅ QR code in white paper frame for better contrast
 *   ✅ Keyboard shortcut indicators on all interactive buttons
+*   ✅ Numbered position indicators (0-9) for verbal callouts ("SPOT 3!")
+*   ✅ Large answer text (Typo.h3) in result dialog for better visibility
+*   ✅ Large answer value (Typo.h3, bold) matching text size
 
 ### Technical Implementation Notes:
 
 **JavaScript Integration:**
 *   `keyboard.js` - Global keyboard event handler
 *   Loaded before Blazor to ensure availability
-*   Supports Space, Enter, Arrow keys, W, D
+*   Supports Space, Enter, Arrow keys, Number keys (0-9), W, D
 *   Proper cleanup on component disposal (IAsyncDisposable)
 
 **Component Structure:**
@@ -87,7 +93,6 @@ This game mode allows players to guess the release year of songs from a Spotify 
 ### Future Enhancements:
 
 #### Priority
-*   ✅ **QR code dark mode support** - QR code adapts to dark/light theme (Christmas Red on dark/light background)
 *   **PWA support** - Progressive Web App to persist game state (continue if browser crashes)
 *   **Dynamic preset listing** - Auto-generate preset list at build time (JSON index of wwwroot/spotify-quizzes/)
 *   **Sound effects** - Optional audio feedback for correct/wrong answers (with toggle)
@@ -104,12 +109,17 @@ This game mode allows players to guess the release year of songs from a Spotify 
 *   ✅ Preset CSV quiz selector from wwwroot/spotify-quizzes/
 *   ✅ Add button in result dialog to search for "release date {artist}-{songname}" to verify release year
 *   ✅ Christmas theme with red/green colors and dark mode support
+*   ✅ **QR code dark mode support** - QR code adapts to dark/light theme (Christmas Red on dark/light background)
 
 ### Recent Updates (2025-11-27):
 *   ✅ QR code dark mode support - Christmas Red on black (dark) or white (light)
 *   ✅ Dark mode AppBar changed to Christmas Red
 *   ✅ Darker green secondary color in dark mode (#0d4020)
 *   ✅ Added "Parhaat joulubiisit.csv" to preset quizzes
+*   ✅ **Number key shortcuts (0-9)** - Jump to placement positions with fallback to nearest
+*   ✅ **Visual position indicators** - White numbered labels on placement buttons
+*   ✅ **Larger answer display** - Answer text and value increased to Typo.h3 (bold)
+*   ✅ **High contrast selection** - Selected placement position shows in white
 
 ## Generic Quiz Game (Non-Spotify)
 

@@ -131,13 +131,18 @@
             {
                 var placementKey = $"{player.Name}_null";
                 var isActivePlacement = _activePlacementKey == placementKey;
-                <div style="position: relative; width: 0; display: flex; align-items: center; z-index: 10;">
+                var placementIndex = _availablePlacements.FindIndex(p => p.key == placementKey);
+                <div style="position: relative; width: 0; display: flex; flex-direction: column; align-items: center; z-index: 10;">
                     <MudIconButton
                         OnClick="() => TogglePlacement(player, placementKey, null, player.Cards.FirstOrDefault())"
                         Icon="@(isActivePlacement ? Icons.Material.Filled.AddCircle : Icons.Material.Outlined.AddCircleOutline)"
-                        Color="Color.Secondary"
+                        Color="@(isActivePlacement ? Color.Default : Color.Secondary)"
                         Size="Size.Large"
-                        Style="margin-left: -20px;" />
+                        Style="@(isActivePlacement ? "margin-left: -20px; color: white;" : "margin-left: -20px;")" />
+                    @if (placementIndex >= 0 && placementIndex <= 9)
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Style="color: white; font-weight: bold;">@placementIndex</MudChip>
+                    }
                 </div>
             }
 
@@ -175,14 +180,19 @@
                         {
                             var placementKey = $"{player.Name}_{prev.id}";
                             var isActivePlacement = _activePlacementKey == placementKey;
+                            var placementIndex = _availablePlacements.FindIndex(p => p.key == placementKey);
 
-                            <div style="position: relative; width: 0; display: flex; align-items: center; z-index: 10;">
+                            <div style="position: relative; width: 0; display: flex; flex-direction: column; align-items: center; z-index: 10;">
                                 <MudIconButton
                                     OnClick="() => TogglePlacement(player, placementKey, prev, next)"
                                     Icon="@(isActivePlacement ? Icons.Material.Filled.AddCircle : Icons.Material.Outlined.AddCircleOutline)"
-                                    Color="Color.Secondary"
+                                    Color="@(isActivePlacement ? Color.Default : Color.Secondary)"
                                     Size="Size.Large"
-                                    Style="margin-left: -20px;" />
+                                    Style="@(isActivePlacement ? "margin-left: -20px; color: white;" : "margin-left: -20px;")" />
+                                @if (placementIndex >= 0 && placementIndex <= 9)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Style="color: white; font-weight: bold;">@placementIndex</MudChip>
+                                }
                             </div>
                         }
                     }
@@ -221,9 +231,9 @@
     </TitleContent>
     <DialogContent>
         <MudStack Spacing="3" AlignItems="AlignItems.Center" Class="pt-4">
-            <MudText Typo="Typo.h5" Align="Align.Center">@_lastAnswerText</MudText>
+            <MudText Typo="Typo.h3" Align="Align.Center" Style="font-weight: bold;">@_lastAnswerText</MudText>
             <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
-                <MudText Typo="Typo.h6" Align="Align.Center" Color="Color.Primary">
+                <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Primary" Style="font-weight: bold;">
                     Arvo:
                 </MudText>
                 @if (_isEditingValue)
@@ -243,7 +253,7 @@
                 }
                 else
                 {
-                    <MudText Typo="Typo.h6" Align="Align.Center" Color="Color.Primary">
+                    <MudText Typo="Typo.h3" Align="Align.Center" Color="Color.Primary" Style="font-weight: bold;">
                         @_lastAnswerValue
                     </MudText>
                     <MudIconButton Icon="@Icons.Material.Filled.Edit" 
@@ -538,6 +548,28 @@
         
         switch (key)
         {
+            case "0":
+            case "1":
+            case "2":
+            case "3":
+            case "4":
+            case "5":
+            case "6":
+            case "7":
+            case "8":
+            case "9":
+                var numIndex = int.Parse(key);
+                if (numIndex >= _availablePlacements.Count)
+                {
+                    // Jos numero on liian iso, mene viimeiseen
+                    _currentPlacementIndex = _availablePlacements.Count - 1;
+                }
+                else
+                {
+                    _currentPlacementIndex = numIndex;
+                }
+                UpdateActivePlacement();
+                break;
             case "ArrowLeft":
                 _currentPlacementIndex = (_currentPlacementIndex - 1 + _availablePlacements.Count) % _availablePlacements.Count;
                 UpdateActivePlacement();
@@ -640,6 +672,7 @@
         _answerGiven = false;
         _activePlacementKey = null;
         _currentPlacementIndex = 0;
+        UpdateAvailablePlacements();
         return Task.CompletedTask;
     }
     

@@ -7,9 +7,10 @@ window.setupKeyboardListener = (dotNetRef) => {
     keyboardHandler = (event) => {
         const key = event.key;
         
-        // Handle arrow keys, space, enter, and Spotify shortcuts
+        // Handle arrow keys, space, enter, number keys 0-9, and Spotify shortcuts
         if (key === 'ArrowLeft' || key === 'ArrowRight' || key === ' ' || key === 'Enter' || 
-            key === 'w' || key === 'W' || key === 'd' || key === 'D') {
+            key === 'w' || key === 'W' || key === 'd' || key === 'D' ||
+            (key >= '0' && key <= '9')) {
             event.preventDefault();
             
             if (dotNetReference) {
