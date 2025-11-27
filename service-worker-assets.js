@@ -13,8 +13,8 @@
       "url": "_framework\/CsvHelper.4zhysgmj1f.wasm.br"
     },
     {
-      "hash": "sha256-rnyjnwg4s76bJS8JWP8BYuwlnxc742Rv+fNpIISb0uE=",
-      "url": "_framework\/MathGame.Web.uug4ppe4cs.wasm.br"
+      "hash": "sha256-ULxuHzQF8iAXgywyZ2ZGYSdgVG3yz1ZHdL89tBQCfIE=",
+      "url": "_framework\/MathGame.Web.oygg3vaadi.wasm.br"
     },
     {
       "hash": "sha256-SqHrN9tUVB0l\/BrSNtGv8jJ1nWHJxly3pzd95RjggtI=",
@@ -93,8 +93,8 @@
       "url": "_framework\/Microsoft.JSInterop.WebAssembly.heoad7mujs.wasm.br"
     },
     {
-      "hash": "sha256-AK0xQVRmjCbR6yEm3YvjvZFOiTpAFbU3K+XrCml37nI=",
-      "url": "_framework\/MudBlazor.flg3tvgets.wasm.br"
+      "hash": "sha256-t1Gtg8JxHo5qHpiI8\/n1SMjYrk5Bnlch+E4lUKgP2Ko=",
+      "url": "_framework\/MudBlazor.gdopqpotpf.wasm.br"
     },
     {
       "hash": "sha256-Ih1lLWkp5fYhMUgxAwpRLEHzIrYtYIVkFtH1c0f3Dd4=",
@@ -173,8 +173,8 @@
       "url": "_framework\/System.Memory.3q0uc4e4j8.wasm.br"
     },
     {
-      "hash": "sha256-fKoqdtE0Ge+GYktWVPFi9swStRAbj8ucdPNjRL1B3nw=",
-      "url": "_framework\/System.Net.Http.5ubjaz3rdf.wasm.br"
+      "hash": "sha256-BOVM0UAPquSLN9bW8KiHbLDKpvKZeaD1\/iL5eE79TrA=",
+      "url": "_framework\/System.Net.Http.v3ig7f8ezj.wasm.br"
     },
     {
       "hash": "sha256-zeBH+0t5FHEOtHttiqoxtDZJ+xkdmGNRlrArZdgsktY=",
@@ -237,7 +237,7 @@
       "url": "_framework\/System.t4d4s3f398.wasm.br"
     },
     {
-      "hash": "sha256-6IXru\/DsqzUkIEZ76hrwjooWZ8NjR0XO6QErzd\/6VXQ=",
+      "hash": "sha256-unUIxEJmLBfBdo1HBzJLrtzGxGSnwiVmLlOOlzizxEo=",
       "url": "_framework\/blazor.boot.json.br"
     },
     {
@@ -317,6 +317,18 @@
       "url": "quizzes\/presidentit.json.br"
     },
     {
+      "hash": "sha256-0LALNsArt7AWIEGKQIvStdL8sCRLgqnsPQHnfQYEVN0=",
+      "url": "spotify-quizzes\/Parhaat joulubiisit.csv.br"
+    },
+    {
+      "hash": "sha256-i8PcAlebqaTZgFC5ykzL8LEjlRFZTZFRbclhEMYMetc=",
+      "url": "spotify-quizzes\/hitster-suomi.csv.br"
+    },
+    {
+      "hash": "sha256-wveVEVD5PMrdoBC48jckvVEO3pJ3M9GRLI+0yhZ7snc=",
+      "url": "spotify-quizzes\/suomi-musaa.csv.br"
+    },
+    {
       "hash": "sha256-wX1LB4yuBRFM4fmdSsH6jBlCch9uCHXV9uFTxnz2blQ=",
       "url": "decode.min.js"
     },
@@ -325,5 +337,5 @@
       "url": "brotliloader.min.js"
     }
   ],
-  "version": "rzW405Dc"
+  "version": "HqGb4dVt"
 };
