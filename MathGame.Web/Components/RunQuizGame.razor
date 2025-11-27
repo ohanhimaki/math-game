@@ -1,8 +1,10 @@
 ﻿@using MathGame.Web.Models.Quiz
 @using Microsoft.JSInterop
+@using Microsoft.Extensions.Configuration
 @typeparam T where T : IComparable<T>
 @inject ISnackbar SnackBar
 @inject IJSRuntime JSRuntime
+@inject IConfiguration Configuration
 @implements IAsyncDisposable
 
 
@@ -16,6 +18,9 @@
             <MudText Typo="Typo.caption" Color="Color.Info" Class="mt-2">
                 ⌨️ Nuolet: Valitse | Space/Enter: Vahvista/Jatka | W: Web | D: Desktop
             </MudText>
+            <MudSwitch @bind-Value="_hideCardNames" Color="Color.Info" Class="mt-3">
+                Piilota kappaleiden nimet muilta pelaajilta
+            </MudSwitch>
         </MudItem>
 
         @* Column 2: Current Song and Buttons *@
@@ -67,11 +72,13 @@
             {
                 var trackId = CurrentItem.Uri.Split(':').Last();
                 var spotifyWebUrl = $"https://open.spotify.com/track/{trackId}";
-                // Using MudBlazor theme colors: Primary (594ae2) and Secondary (00c853 green)
-                var qrCodeUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=594ae2&bgcolor=ffffff&data={Uri.EscapeDataString(spotifyWebUrl)}";
+                // Primary color (Christmas Red) with black/white background based on mode
+                var qrColor = "c41e3a"; // Christmas Red (Primary)
+                var qrBgColor = IsDarkMode ? "000000" : "ffffff"; // Black in dark mode, white in light
+                var qrCodeUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=200x200&color={qrColor}&bgcolor={qrBgColor}&data={Uri.EscapeDataString(spotifyWebUrl)}";
 
                 <MudText Typo="Typo.body2" Class="mb-2">Tai skannaa QR-koodi:</MudText>
-                <MudPaper Elevation="3" Class="pa-2" Style="background-color: white;">
+                <MudPaper Elevation="3" Class="pa-2" Style="@($"background-color: {(IsDarkMode ? "#000000" : "white")};")">
                     <MudImage Src="@qrCodeUrl" Alt="QR Code for Spotify" Width="200" Height="200" />
                 </MudPaper>
             }
@@ -79,7 +86,8 @@
     </MudGrid>
 </MudPaper>
 
-@* Pelaajat riveittäin *@
+@* Pelaajat riveittäin - scrollaava *@
+<div style="max-height: 60vh; overflow-y: auto; margin-bottom: 1rem;">
 @foreach (var player in Game.Players)
 {
     var isActivePlayer = Game.CurrentPlayer == player;
@@ -107,6 +115,13 @@
                     </MudButton>
                 }
             </MudStack>
+            <MudButton OnClick="ShowWinnerCelebration" 
+                       Variant="Variant.Filled" 
+                       Color="Color.Success" 
+                       StartIcon="@Icons.Material.Filled.EmojiEvents"
+                       Size="Size.Small">
+                Juhli voittajaa!
+            </MudButton>
         </MudStack>
 
         @* Pelaajan kortit horisontaalisesti *@
@@ -140,7 +155,10 @@
                     <MudCard Style="min-width: 150px; max-width: 150px;">
                         <MudCardContent>
                             <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Primary">@item.value</MudText>
-                            <MudText Typo="Typo.body2" Align="Align.Center" Style="font-size: 0.75rem;">@item.text</MudText>
+                            @if (isActivePlayer || !_hideCardNames)
+                            {
+                                <MudText Typo="Typo.body2" Align="Align.Center" Style="font-size: 0.75rem;">@item.text</MudText>
+                            }
                         </MudCardContent>
                     </MudCard>
 
@@ -149,23 +167,31 @@
                     {
                         var prev = player.Cards[cardIndex];
                         var next = cardIndex + 1 < player.Cards.Count ? player.Cards[cardIndex + 1] : null;
-                        var placementKey = $"{player.Name}_{prev.id}";
-                        var isActivePlacement = _activePlacementKey == placementKey;
+                        
+                        @* Piilota painike jos molemmat puolet ovat samaa arvoa *@
+                        var shouldShowButton = next == null || !Equals(prev.value, next.value);
+                        
+                        if (shouldShowButton)
+                        {
+                            var placementKey = $"{player.Name}_{prev.id}";
+                            var isActivePlacement = _activePlacementKey == placementKey;
 
-                        <div style="position: relative; width: 0; display: flex; align-items: center; z-index: 10;">
-                            <MudIconButton
-                                OnClick="() => TogglePlacement(player, placementKey, prev, next)"
-                                Icon="@(isActivePlacement ? Icons.Material.Filled.AddCircle : Icons.Material.Outlined.AddCircleOutline)"
-                                Color="Color.Secondary"
-                                Size="Size.Large"
-                                Style="margin-left: -20px;" />
-                        </div>
+                            <div style="position: relative; width: 0; display: flex; align-items: center; z-index: 10;">
+                                <MudIconButton
+                                    OnClick="() => TogglePlacement(player, placementKey, prev, next)"
+                                    Icon="@(isActivePlacement ? Icons.Material.Filled.AddCircle : Icons.Material.Outlined.AddCircleOutline)"
+                                    Color="Color.Secondary"
+                                    Size="Size.Large"
+                                    Style="margin-left: -20px;" />
+                            </div>
+                        }
                     }
                 }
             }
         </MudStack>
     </MudPaper>
 }
+</div>
 
 @* Seuraava pelaaja -painike *@
 @if (CurrentItem is null && _answerGiven)
@@ -226,6 +252,22 @@
                                    Size="Size.Small" />
                 }
             </MudStack>
+            
+            @if (!string.IsNullOrEmpty(_lastAnswerText))
+            {
+                var searchQuery = $"release date {_lastAnswerText}";
+                var searchUrl = $"https://www.google.com/search?q={Uri.EscapeDataString(searchQuery)}";
+                
+                <MudButton
+                    Href="@searchUrl"
+                    Target="_blank"
+                    Variant="Variant.Outlined"
+                    Color="Color.Info"
+                    StartIcon="@Icons.Material.Filled.Search"
+                    Size="Size.Small">
+                    Tarkista julkaisuvuosi
+                </MudButton>
+            }
         </MudStack>
     </DialogContent>
     <DialogActions>
@@ -282,9 +324,81 @@
     </DialogActions>
 </MudDialog>
 
+@* Dialogi voittajan juhlalle *@
+<MudDialog @bind-Visible="_showWinnerDialog" Options="_winnerDialogOptions">
+    <TitleContent>
+        <MudPaper Class="pa-4" Style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);">
+            <MudText Typo="Typo.h3" Align="Align.Center" Style="color: #333; font-weight: bold;">
+                <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Size="Size.Large" Style="color: #333;" />
+                VOITTAJA!
+            </MudText>
+        </MudPaper>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="3" AlignItems="AlignItems.Center" Class="pt-4">
+            @foreach (var player in Game.Players.OrderByDescending(p => p.Cards.Count))
+            {
+                var isWinner = player == Game.Players.OrderByDescending(p => p.Cards.Count).First();
+                <MudPaper Elevation="@(isWinner ? 8 : 2)" Class="pa-3" Style="@(isWinner ? "background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); width: 100%;" : "width: 100%;")">
+                    <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                            @if (isWinner)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Color="Color.Warning" Size="Size.Large" />
+                            }
+                            <MudText Typo="@(isWinner ? Typo.h5 : Typo.h6)" Style="@(isWinner ? "font-weight: bold; color: #333;" : "")">
+                                @player.Name
+                            </MudText>
+                        </MudStack>
+                        <MudText Typo="@(isWinner ? Typo.h5 : Typo.h6)" Color="@(isWinner ? Color.Dark : Color.Success)" Style="@(isWinner ? "font-weight: bold;" : "")">
+                            @player.Cards.Count pistettä
+                        </MudText>
+                    </MudStack>
+                </MudPaper>
+            }
+            
+            @if (!string.IsNullOrEmpty(_celebrationTrackId))
+            {
+                var spotifyWebUrl = $"https://open.spotify.com/track/{_celebrationTrackId}";
+                var spotifyDesktopUrl = $"spotify:track:{_celebrationTrackId}";
+                
+                <MudDivider Class="my-3" />
+                
+                <MudText Typo="Typo.h6" Class="mb-2">🎉 Juhlakappale:</MudText>
+                
+                <MudStack Row Spacing="2">
+                    <MudButton
+                        Href="@spotifyWebUrl"
+                        Target="_blank"
+                        Variant="Variant.Filled"
+                        Color="Color.Success"
+                        StartIcon="@Icons.Material.Filled.Language">
+                        Spotify Web
+                    </MudButton>
+                    
+                    <MudButton
+                        Href="@spotifyDesktopUrl"
+                        Target="_blank"
+                        Variant="Variant.Filled"
+                        Color="Color.Primary"
+                        StartIcon="@Icons.Material.Filled.DesktopWindows">
+                        Spotify Desktop
+                    </MudButton>
+                </MudStack>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseWinnerDialog" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true">
+            Sulje
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
 
 @code {
     [Parameter] public required QuizGame<T> Game { get; set; }
+    [CascadingParameter(Name = "IsDarkMode")] public bool IsDarkMode { get; set; }
 
     private QuizItem<T>? CurrentItem;
     private bool _answerGiven = false;
@@ -301,6 +415,14 @@
     private bool _showFailedHistoryDialog = false;
     private Player<T>? _selectedPlayer;
     private DialogOptions _historyDialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+    
+    // Voittajan dialogi
+    private bool _showWinnerDialog = false;
+    private DialogOptions _winnerDialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+    private string? _celebrationTrackId;
+    
+    // Esitystila
+    private bool _hideCardNames = false;
     
     // Arvon muokkaus
     private bool _isEditingValue = false;
@@ -335,16 +457,16 @@
 
             foreach (var gamePlayer in Game.Players)
             {
-                if (gamePlayer.Cards.Count() == 0)
+                // Draw initial cards for each player
+                for (int i = 0; i < Game.InitialCardsPerPlayer; i++)
                 {
-                    // If player has no cards, draw a card for them
                     var item = Game.GetRandomQuestion();
                     if (item is not null)
                     {
                         gamePlayer.AddCard(item);
-                        gamePlayer.SortCards();
                     }
                 }
+                gamePlayer.SortCards();
             }
 
             // Nosta ensimmäinen kortti ensimmäiselle pelaajalle
@@ -469,6 +591,13 @@
         {
             var prev = currentPlayer.Cards[i];
             var next = i + 1 < currentPlayer.Cards.Count ? currentPlayer.Cards[i + 1] : null;
+            
+            // Skip if prev and next have same value (no point placing between same years)
+            if (next != null && Equals(prev.value, next.value))
+            {
+                continue;
+            }
+            
             var key = $"{currentPlayer.Name}_{prev.id}";
             _availablePlacements.Add((key, currentPlayer, prev, next));
         }
@@ -653,6 +782,21 @@
     {
         _showFailedHistoryDialog = false;
         _selectedPlayer = null;
+        StateHasChanged();
+    }
+    
+    private void ShowWinnerCelebration()
+    {
+        _celebrationTrackId = Configuration["CelebrationSong:TrackId"];
+        Console.WriteLine(_celebrationTrackId);
+        _celebrationTrackId = _celebrationTrackId ?? "7nwLYNM1LQWwwHLiHcm6Ai"; // fix, ei toimi Configuration jostain syystä?
+        _showWinnerDialog = true;
+        StateHasChanged();
+    }
+    
+    private void CloseWinnerDialog()
+    {
+        _showWinnerDialog = false;
         StateHasChanged();
     }
 

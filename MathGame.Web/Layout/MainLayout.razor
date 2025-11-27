@@ -23,12 +23,14 @@
         <MudText>test</MudText>
     </MudDrawer>
     <MudMainContent>
-        @Body
+        <CascadingValue Value="_isDarkMode" Name="IsDarkMode">
+            @Body
+        </CascadingValue>
     </MudMainContent>
 </MudLayout>
 
 @* Required *@
-<MudThemeProvider Theme="_theme" />
+<MudThemeProvider @ref="_mudThemeProvider" Theme="_theme" @bind-IsDarkMode="@_isDarkMode" />
 <MudPopoverProvider />
 
 @* Needed for dialogs *@
@@ -40,6 +42,8 @@
 
 @code {
     bool _drawerOpen = true;
+    private MudThemeProvider? _mudThemeProvider;
+    private bool _isDarkMode = true;
 
     void DrawerToggle()
     {
@@ -77,8 +81,8 @@
         PaletteDark = new PaletteDark()
         {
             Primary = "#c41e3a", // Christmas Red
-            Secondary = "#165b33", // Christmas Green
-            AppbarBackground = "#1a1a1a",
+            Secondary = "#0d4020", // Darker Christmas Green
+            AppbarBackground = "#c41e3a", // Christmas Red appbar
             Background = "#1a1a1a",
             Surface = "#2d2d2d",
             DrawerBackground = "#2d2d2d",

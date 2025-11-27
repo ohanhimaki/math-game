@@ -27,9 +27,9 @@ namespace MathGame.Web.Models.Quiz
                         .Where(r => r.Album_Date != null && int.TryParse(r.Album_Date.AsSpan(0, 4), out _))
                         .Select(r => new QuizItem<int>
                         {
-                            text = $"{r.Song} by {r.Artist}",
+                            text = $"{r.Artist} - {r.Song}",
                             value = int.Parse(r.Album_Date.AsSpan(0, 4)),
-                            Uri = !string.IsNullOrEmpty(r.Spotify_Track_Id) ? $"spotify:track:{r.Spotify_Track_Id}:play" : null
+                            Uri = !string.IsNullOrEmpty(r.Spotify_Track_Id) ? $"spotify:track:{r.Spotify_Track_Id}" : null
                         }).ToArray()
                 };
 

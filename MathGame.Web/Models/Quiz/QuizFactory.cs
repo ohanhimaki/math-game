@@ -11,7 +11,7 @@ namespace MathGame.Web.Models.Quiz
             _csvParser = csvParser;
         }
 
-        public QuizGame<int>? CreateGameFromCsv(string csvContent, string playerNames)
+        public QuizGame<int>? CreateGameFromCsv(string csvContent, string playerNames, int initialCards = 1)
         {
             var quiz = _csvParser.Parse(csvContent);
             if (quiz == null)
@@ -19,7 +19,7 @@ namespace MathGame.Web.Models.Quiz
                 return null;
             }
 
-            return new QuizGame<int>(quiz, playerNames);
+            return new QuizGame<int>(quiz, playerNames, initialCards: initialCards);
         }
     }
 }
