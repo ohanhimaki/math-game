@@ -129,9 +129,9 @@ MathGame.Web/
 
 **Visual Design:**
 - MudBlazor Material Design components
-- Primary color: Violet (#594ae2)
-- Secondary color: Green (#00c853)
-- QR codes with white paper frame for contrast
+- Primary color: Christmas Red (#c41e3a)
+- Secondary color: Christmas Green (#165b33)
+- QR codes with dynamic colors (adapts to dark/light mode)
 - Gradient dialogs: Green for correct, Red for wrong
 
 **Responsive Layout:**
@@ -372,23 +372,22 @@ dotnet run
 
 ## Known Issues & Limitations
 
-1. **QR Code**: Doesn't match dark mode (hardcoded colors)
-2. **Spotify Links**: Desktop URIs may not work on all platforms
-3. **CSV Format**: Tightly coupled to Chosic export format
-4. **Browser Compatibility**: Requires modern browser with WebAssembly support
-5. **Preset List**: Hardcoded in component, not dynamically scanned from filesystem
+1. **Spotify Links**: Desktop URIs may not work on all platforms
+2. **CSV Format**: Tightly coupled to Chosic export format
+3. **Browser Compatibility**: Requires modern browser with WebAssembly support
+4. **Preset List**: Hardcoded in component, not dynamically scanned from filesystem
 
 ---
 
 ## Future Considerations
 
-- Dark mode QR code generation
 - Dynamic preset quiz discovery (scan wwwroot/spotify-quizzes/ automatically)
 - Alternative CSV formats support
 - Offline play support (PWA)
 - Score persistence (local storage)
 - Game replay/history
 - Additional game modes (math games already scaffolded)
+- Sound effects for game actions
 
 ---
 

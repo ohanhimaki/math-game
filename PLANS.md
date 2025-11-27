@@ -86,6 +86,14 @@ This game mode allows players to guess the release year of songs from a Spotify 
 
 ### Future Enhancements:
 
+#### Priority
+*   ✅ **QR code dark mode support** - QR code adapts to dark/light theme (Christmas Red on dark/light background)
+*   **PWA support** - Progressive Web App to persist game state (continue if browser crashes)
+*   **Dynamic preset listing** - Auto-generate preset list at build time (JSON index of wwwroot/spotify-quizzes/)
+*   **Sound effects** - Optional audio feedback for correct/wrong answers (with toggle)
+*   **CSV template download** - Provide example CSV template for custom quiz creation
+
+#### Completed
 *   ✅ Ability to press button on players/teams card to CELEBRATE WINNER (show also all teams ordered)
 *   ✅ Show artist + song always as: artist - songname (no songname by artist)
 *   ✅ Fix spotify web player link
@@ -94,8 +102,18 @@ This game mode allows players to guess the release year of songs from a Spotify 
 *   ✅ Toggle to hide card names from non-active players (presentation mode)
 *   ✅ Hide placement buttons between cards with same value
 *   ✅ Preset CSV quiz selector from wwwroot/spotify-quizzes/
-*   make qr code to match darkmode
 *   ✅ Add button in result dialog to search for "release date {artist}-{songname}" to verify release year
+
+## Generic Quiz Game (Non-Spotify)
+
+**Status: 🔄 Scaffolded, Needs Development**
+
+The generic quiz game framework already exists (`QuizOrderGame.razor`, `CsvQuizCreator.razor`) but needs enhancement:
+
+*   Support for different quiz types (not just Spotify/music)
+*   Generic CSV parser for any comparable data
+*   Custom value types (dates, numbers, text)
+*   CSV template system for easy quiz creation
 
 
 

@@ -72,11 +72,13 @@
             {
                 var trackId = CurrentItem.Uri.Split(':').Last();
                 var spotifyWebUrl = $"https://open.spotify.com/track/{trackId}";
-                // Using MudBlazor theme colors: Primary (594ae2) and Secondary (00c853 green)
-                var qrCodeUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=594ae2&bgcolor=ffffff&data={Uri.EscapeDataString(spotifyWebUrl)}";
+                // Primary color (Christmas Red) with black/white background based on mode
+                var qrColor = "c41e3a"; // Christmas Red (Primary)
+                var qrBgColor = IsDarkMode ? "000000" : "ffffff"; // Black in dark mode, white in light
+                var qrCodeUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=200x200&color={qrColor}&bgcolor={qrBgColor}&data={Uri.EscapeDataString(spotifyWebUrl)}";
 
                 <MudText Typo="Typo.body2" Class="mb-2">Tai skannaa QR-koodi:</MudText>
-                <MudPaper Elevation="3" Class="pa-2" Style="background-color: white;">
+                <MudPaper Elevation="3" Class="pa-2" Style="@($"background-color: {(IsDarkMode ? "#000000" : "white")};")">
                     <MudImage Src="@qrCodeUrl" Alt="QR Code for Spotify" Width="200" Height="200" />
                 </MudPaper>
             }
@@ -396,6 +398,7 @@
 
 @code {
     [Parameter] public required QuizGame<T> Game { get; set; }
+    [CascadingParameter(Name = "IsDarkMode")] public bool IsDarkMode { get; set; }
 
     private QuizItem<T>? CurrentItem;
     private bool _answerGiven = false;
