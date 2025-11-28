@@ -45,6 +45,27 @@
                                  Variant="Variant.Outlined" 
                                  Min="1" 
                                  Max="10" />
+                
+                <MudDivider Class="my-2" />
+                <MudText Typo="Typo.h6">Pelisäännöt</MudText>
+                
+                <MudSwitch @bind-Value="_uploadModel.UseRyostoCards" 
+                           Color="Color.Primary"
+                           Label="Käytä ryöstokortteja (jokerit)" />
+                
+                @if (_uploadModel.UseRyostoCards)
+                {
+                    <MudNumericField @bind-Value="_uploadModel.InitialRyostoCards" 
+                                     Label="Ryöstokorttien määrä alussa" 
+                                     Variant="Variant.Outlined" 
+                                     Min="0" 
+                                     Max="10" />
+                }
+                
+                <MudSwitch @bind-Value="_uploadModel.UseDecadeGuessing" 
+                           Color="Color.Primary"
+                           Label="Vuosikymmen-arvaus kun vain 1 kortti" />
+                
                 <MudButton ButtonType="ButtonType.Submit" 
                            Variant="Variant.Filled" 
                            Color="Color.Primary"
@@ -115,7 +136,17 @@ else
             csvContent = await reader.ReadToEndAsync();
         }
 
-        _game = QuizFactory.CreateGameFromCsv(csvContent, _uploadModel.PlayerNames, _uploadModel.InitialCards);
+        _game = QuizFactory.CreateGameFromCsv(
+            csvContent, 
+            _uploadModel.PlayerNames, 
+            _uploadModel.InitialCards,
+            _uploadModel.UseRyostoCards ? _uploadModel.InitialRyostoCards : 0);
+        
+        if (_game != null)
+        {
+            _game.UseRyostoCards = _uploadModel.UseRyostoCards;
+            _game.UseDecadeGuessing = _uploadModel.UseDecadeGuessing;
+        }
 
         if (_game == null)
         {
@@ -130,5 +161,8 @@ else
         public int InitialCards { get; set; } = 1;
         public string SourceType { get; set; } = "preset";
         public string SelectedPreset { get; set; } = "";
+        public bool UseRyostoCards { get; set; } = true;
+        public int InitialRyostoCards { get; set; } = 2;
+        public bool UseDecadeGuessing { get; set; } = true;
     }
 }

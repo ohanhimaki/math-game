@@ -56,6 +56,8 @@ public class QuizGame<T> where T : IComparable<T>
     public bool ShowValue = false;
     public int InitialCardsPerPlayer = 1;
     public int InitialRyostoCardsPerPlayer = 2;
+    public bool UseRyostoCards = true;
+    public bool UseDecadeGuessing = true;
     private List<QuizItem<T>> AvailableQuestions;
     public int TotalQuestionsLeft => AvailableQuestions.Count;
     public int TotalQuestions => _quiz.items?.Length ?? 0;

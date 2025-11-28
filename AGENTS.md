@@ -11,12 +11,12 @@
 MathGame.Web is a Blazor WebAssembly application that hosts multiple interactive quiz games. The primary focus is on the **Spotify Playlist Quiz Game**, where players guess the release year of songs from Spotify playlists.
 
 **Key Statistics:**
-- ~2,000 lines of code (C# + Razor) - increased with ryöstö & decade features
+- ~2,100 lines of code (C# + Razor) - fully featured HITSTER-style game
 - 7 Razor pages
 - 4 Razor components
 - 17 C# classes/services
 - 2 JavaScript interop files
-- RunQuizGame.razor: ~1,142 lines (core game logic)
+- RunQuizGame.razor: ~1,190 lines (core game logic with all features)
 
 ---
 
@@ -75,14 +75,18 @@ MathGame.Web/
 
 **Game Flow:**
 1. User selects a preset quiz from dropdown OR uploads custom CSV file
-2. Preset quizzes loaded from `wwwroot/spotify-quizzes/` via HttpClient
-3. CSV is parsed into `QuizItem<int>` objects (song name, artist, year, Spotify URI)
-4. Players configure initial cards per player (1-10, default: 1)
-5. Players take turns placing cards in chronological order
-6. System validates placement and awards points for correct answers
+2. User configures game rules:
+   - Use ryöstö cards (challenge system) - toggle on/off
+   - Initial ryöstö cards per player (if enabled)
+   - Use decade guessing for single card - toggle on/off
+3. Preset quizzes loaded from `wwwroot/spotify-quizzes/` via HttpClient
+4. CSV is parsed into `QuizItem<int>` objects (song name, artist, year, Spotify URI)
+5. Players configure initial cards per player (1-10, default: 1)
+6. Players take turns placing cards in chronological order
+7. System validates placement and awards points for correct answers
 
 **Key Components:**
-- **SpotifyQuizPlayer.razor**: Entry point, preset selector & file upload
+- **SpotifyQuizPlayer.razor**: Entry point, preset selector, file upload & game rule configuration
 - **RunQuizGame<T>.razor**: Generic game runner (supports any comparable type)
 - **CsvQuizParser**: Parses CSV with columns: Song, Artist, Album Date, Spotify Track Id
 
@@ -97,7 +101,9 @@ MathGame.Web/
   - **Skip Song** (1 card): Skip current song and draw new one
   - **Challenge** (1 card): Challenge opponent's placement - if correct, steal the song card
   - **Trade for Card** (3 cards): Get current card without guessing
-  - **Earn more cards**: Get 1 ryöstö card for every 5 correct answers
+  - **Earn more cards**: 
+    - Get 1 ryöstö card for every 5 correct answers
+    - Get 1 ryöstö card by correctly guessing artist + song title on your turn
 - **Cards**: Each player builds a timeline of correctly placed songs
 - **Validation**: System checks if new card fits between adjacent cards
 - **Smart Placement**: Buttons hidden between cards with same value (no point guessing between same years)
@@ -107,7 +113,15 @@ MathGame.Web/
 **User Interactions:**
 - **Preset Quizzes**: Radio button to select from `wwwroot/spotify-quizzes/*.csv`
 - **Custom Upload**: Alternative radio option for own CSV files
+- **Game Rules Configuration**:
+  - Toggle ryöstö cards (challenge system) on/off
+  - Set initial ryöstö cards count (0-10)
+  - Toggle decade guessing for single card scenarios
 - **Placement Selection**: Click + icons between cards or use keyboard shortcuts
+- **Artist & Song Guessing**:
+  - Player shouts artist + song name before placing (e.g., "Apulanta - Mato, väliin 6!")
+  - Game master selects placement and checkbox in result dialog if guess was correct
+  - Instant ryöstö card reward when closing result dialog
 - **Decade Guessing** (1 card only):
   - Yellow warning message shown when player has only 1 card
   - Available decades shown as large buttons (e.g., "1980-luku")
@@ -116,6 +130,7 @@ MathGame.Web/
   - Challenge buttons hidden when active player has only 1 card
 - **Ryöstö Cards**: 
   - Buttons shown for active player: "🎴 Ohita kappale (1)" and "🎴 Vaihda korttiin (3)"
+  - Checkbox in result dialog: "🎤 Pelaaja arvasi myös artisti & kappaleen oikein (+1 🎴)"
   - Other players see "🎴 Haasta! (1)" button when active player has selected position
   - Challenge mode: Red placement buttons on challenged player's timeline
   - Two-click confirmation for challenges (select position, then confirm)
@@ -191,6 +206,11 @@ MathGame.Web/
 - ✅ **Decade guessing** - When player has only 1 card, must guess decade instead of placement
 - ✅ **Dynamic decade detection** - System scans all cards to show available decades
 - ✅ **Ryöstö card earning** - Players earn 1 ryöstö card every 5 correct answers
+- ✅ **Artist & song guessing** - Players can guess artist + song title on their turn to earn 1 ryöstö card
+  - Checkbox appears in result dialog after placement
+  - Game master checks the box if player guessed correctly before placing
+  - Card awarded when closing the result dialog
+- ✅ **Game rule toggles** - Configure ryöstö cards and decade guessing at game start
 
 ### 2025-11-27
 - ✅ QR code dark mode support - Christmas Red on black (dark) or white (light)
@@ -266,10 +286,11 @@ public async ValueTask DisposeAsync()
 - `Players[].RyostoCards`: Number of challenge cards per player
 
 **Dialog States:**
-- `_showResultDialog`: Answer feedback
+- `_showResultDialog`: Answer feedback with artist/song guess checkbox
 - `_showFailedHistoryDialog`: Review failed cards
 - `_showWinnerDialog`: Celebration screen
 - `_isEditingValue`: Value correction mode
+- `_guessedArtistAndSong`: Checkbox state for artist/song guess
 
 **Placement Selection:**
 - `_activePlacementKey`: Currently selected position
@@ -405,10 +426,10 @@ dotnet run
 - **Configuration**: Add to `appsettings.json`, inject `IConfiguration`
 
 ### Files to Know
-- **RunQuizGame.razor**: ~1,142 lines, core game logic - tread carefully
-  - Contains decade guessing, challenge mode, placement logic
-  - Most complex component in the project
-- **SpotifyQuizPlayer.razor**: Preset selector and file upload logic
+- **RunQuizGame.razor**: ~1,190 lines, core game logic - tread carefully
+  - Contains decade guessing, challenge mode, placement logic, artist/song guess checkbox
+  - Most complex component in the project with full HITSTER-style rules
+- **SpotifyQuizPlayer.razor**: Preset selector, file upload & game rule configuration
 - **CsvQuizParser.cs**: CSV → Quiz<int> conversion
 - **QuizGame.cs**: Game state, player logic, initial cards/ryöstö configuration, decade detection
 - **keyboard.js**: Global keyboard event handling
@@ -470,4 +491,4 @@ cat MathGame.Web/appsettings.json
 
 ---
 
-**For AI Agents:** This document provides comprehensive context about the project. Always reference PLANS.md for feature status. Maintain Finnish UI text and MudBlazor design patterns. The RunQuizGame component is the most complex (~1,142 lines) - make surgical changes only. Key recent additions: ryöstö cards (challenge system) and decade guessing for single-card scenarios.
+**For AI Agents:** This document provides comprehensive context about the project. Always reference PLANS.md for feature status. Maintain Finnish UI text and MudBlazor design patterns. The RunQuizGame component is the most complex (~1,190 lines) - make surgical changes only. Key recent additions: ryöstö cards (challenge system), decade guessing for single-card scenarios, and artist/song guessing via checkbox in result dialog. The game now fully implements HITSTER-style gameplay mechanics.

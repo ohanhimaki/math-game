@@ -113,7 +113,10 @@
                     }
                 </MudText>
                 <MudText Color="Color.Success">Pisteet: @player.Cards.Count</MudText>
-                <MudText Color="Color.Warning">🎴 Ryöstökortit: @player.RyostoCards</MudText>
+                @if (Game.UseRyostoCards)
+                {
+                    <MudText Color="Color.Warning">🎴 Ryöstökortit: @player.RyostoCards</MudText>
+                }
                 @if (player.FailedCards.Count > 0)
                 {
                     <MudButton OnClick="() => ShowFailedCardsHistory(player)" 
@@ -123,7 +126,7 @@
                         Väärät: @player.FailedCards.Count
                     </MudButton>
                 }
-                @if (isActivePlayer && CurrentItem != null && !_challengeMode)
+                @if (Game.UseRyostoCards && isActivePlayer && CurrentItem != null && !_challengeMode)
                 {
                     <MudButton OnClick="UseRyostoSkipSong"
                                Variant="Variant.Outlined"
@@ -142,7 +145,7 @@
                         🎴 Vaihda korttiin (3)
                     </MudButton>
                 }
-                @if (!isActivePlayer && CurrentItem != null && !_challengeMode && _activePlacementKey != null && Game.CurrentPlayer != null && Game.CurrentPlayer.Cards.Count > 1)
+                @if (Game.UseRyostoCards && !isActivePlayer && CurrentItem != null && !_challengeMode && _activePlacementKey != null && Game.CurrentPlayer != null && (Game.CurrentPlayer.Cards.Count > 1 || !Game.UseDecadeGuessing))
                 {
                     <MudButton OnClick="() => StartChallenge(player)"
                                Variant="Variant.Outlined"
@@ -177,7 +180,8 @@
         <MudStack Row Class="mt-3" Style="overflow-x: auto; flex-wrap: nowrap; position: relative; padding-left: 20px;">
             @{
                 var hasOnlyOneCard = player.Cards.Count == 1;
-                var showPlacementButtons = (isActivePlayer && CurrentItem is not null && !_challengeMode && !hasOnlyOneCard) || 
+                var shouldHidePlacementForOneCard = hasOnlyOneCard && Game.UseDecadeGuessing;
+                var showPlacementButtons = (isActivePlayer && CurrentItem is not null && !_challengeMode && !shouldHidePlacementForOneCard) || 
                                           (_challengeMode && player == _challengedPlayer);
             }
             
@@ -256,7 +260,7 @@
         </MudStack>
 
         @* Vuosikymmenvalinta kun vain 1 kortti *@
-        @if (isActivePlayer && CurrentItem is not null && !_challengeMode && player.Cards.Count == 1)
+        @if (Game.UseDecadeGuessing && isActivePlayer && CurrentItem is not null && !_challengeMode && player.Cards.Count == 1)
         {
             var decades = Game.GetAvailableDecades();
             <MudPaper Class="mt-4 pa-4" Elevation="8" Style="background: linear-gradient(135deg, rgba(196, 30, 58, 0.1) 0%, rgba(22, 91, 51, 0.1) 100%); border: 2px solid var(--mud-palette-warning);">
@@ -387,6 +391,14 @@
                     Size="Size.Small">
                     Tarkista julkaisuvuosi
                 </MudButton>
+            }
+            
+            @if (Game.UseRyostoCards && _lastAnswerPlayer != null)
+            {
+                <MudDivider Class="my-3" />
+                <MudCheckBox @bind-Value="_guessedArtistAndSong" 
+                             Color="Color.Warning"
+                             Label="🎤 Pelaaja arvasi myös artisti & kappaleen oikein (+1 🎴)" />
             }
         </MudStack>
     </DialogContent>
@@ -568,6 +580,9 @@
     
     // Vuosikymmenvalinta (kun vain 1 kortti)
     private int? _selectedDecade = null;
+    
+    // Artisti & kappale -arvaus (checkbox vastausdialgissa)
+    private bool _guessedArtistAndSong = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -965,6 +980,7 @@
 
         // Näytä iso dialogi tuloksesta
         _showResultDialog = true;
+        _guessedArtistAndSong = false;
         CurrentItem = null;
         _answerGiven = true;
         _selectedDecade = null;
@@ -973,6 +989,8 @@
 
     private void CheckAndAwardRyostoCard(Player<T> player)
     {
+        if (!Game.UseRyostoCards) return;
+        
         // Ansaitse ryöstokortti joka 5. oikea vastaus
         int correctAnswers = player.Cards.Count;
         
@@ -1042,6 +1060,7 @@
 
         // Näytä iso dialogi tuloksesta
         _showResultDialog = true;
+        _guessedArtistAndSong = false;
         CurrentItem = null;
         _answerGiven = true;
         _activePlacementKey = null;
@@ -1119,7 +1138,15 @@
     
     private void CloseResultDialog()
     {
+        // Tarkista oliko artisti & kappale arvaus oikein
+        if (_guessedArtistAndSong && _lastAnswerPlayer != null && Game.UseRyostoCards)
+        {
+            _lastAnswerPlayer.RyostoCards++;
+            SnackBar.Add($"🎤 {_lastAnswerPlayer.Name} arvasi myös artisti & kappaleen ja sai ryöstokortin!", Severity.Success);
+        }
+        
         _showResultDialog = false;
+        _guessedArtistAndSong = false;
         StateHasChanged();
     }
     
