@@ -8,11 +8,12 @@ public class QuizGame<T> where T : IComparable<T>
     public string? QuizDescription => _quiz.description;
     
 
-    public QuizGame(Quiz<T> quiz, string playerNames = "", int players = 1, int initialCards = 1)
+    public QuizGame(Quiz<T> quiz, string playerNames = "", int players = 1, int initialCards = 1, int initialRyostoCards = 2)
     {
         _quiz = quiz;
         AvailableQuestions = _quiz.items?.ToList() ?? new List<QuizItem<T>>();
         InitialCardsPerPlayer = initialCards;
+        InitialRyostoCardsPerPlayer = initialRyostoCards;
 
         ShowValue = quiz.showAnswer;
         
@@ -24,7 +25,8 @@ public class QuizGame<T> where T : IComparable<T>
             {
                 Players.Add(new Player<T>
                 {
-                    Name = name.Trim()
+                    Name = name.Trim(),
+                    RyostoCards = initialRyostoCards
                 });
             }
         }
@@ -38,19 +40,24 @@ public class QuizGame<T> where T : IComparable<T>
             {
                 Players.Add(new Player<T>
                 {
-                    Name = playerNamesArray[i - 1].Trim()
+                    Name = playerNamesArray[i - 1].Trim(),
+                    RyostoCards = initialRyostoCards
                 });
                 continue;
             }
             Players.Add(new Player<T>
             {
-                Name = $"Player {i}"
+                Name = $"Player {i}",
+                RyostoCards = initialRyostoCards
             });
         }
     }
 
     public bool ShowValue = false;
     public int InitialCardsPerPlayer = 1;
+    public int InitialRyostoCardsPerPlayer = 2;
+    public bool UseRyostoCards = true;
+    public bool UseDecadeGuessing = true;
     private List<QuizItem<T>> AvailableQuestions;
     public int TotalQuestionsLeft => AvailableQuestions.Count;
     public int TotalQuestions => _quiz.items?.Length ?? 0;
@@ -74,9 +81,41 @@ public class QuizGame<T> where T : IComparable<T>
         return question;
     }
 
+    public void ReturnQuestion(QuizItem<T> question)
+    {
+        if (question != null && !AvailableQuestions.Contains(question))
+        {
+            AvailableQuestions.Add(question);
+        }
+    }
+
     public void NextPlayer()
     {
         CurrentPlayerIndex = (CurrentPlayerIndex + 1) % Players.Count;
+    }
+
+    public List<int> GetAvailableDecades()
+    {
+        var allItems = new List<QuizItem<T>>();
+        allItems.AddRange(AvailableQuestions);
+        
+        foreach (var player in Players)
+        {
+            allItems.AddRange(player.Cards);
+            allItems.AddRange(player.FailedCards);
+        }
+
+        var decades = new HashSet<int>();
+        foreach (var item in allItems)
+        {
+            if (item.value is int year)
+            {
+                int decade = (year / 10) * 10;
+                decades.Add(decade);
+            }
+        }
+
+        return decades.OrderBy(d => d).ToList();
     }
 
 }
@@ -86,6 +125,7 @@ public class Player<T> where T : IComparable<T>
     public string? Name { get; set; }
     public List<QuizItem<T>> Cards { get; set; } = new();
     public List<QuizItem<T>> FailedCards { get; set; } = new();
+    public int RyostoCards { get; set; } = 0;
 
     public bool CheckOrderGuess(QuizItem<T> currentItem, QuizItem<T>? prev, QuizItem<T>? next)
     {
@@ -98,6 +138,17 @@ public class Player<T> where T : IComparable<T>
 
         return true;
     }
+
+    public bool CheckDecadeGuess(QuizItem<T> currentItem, int guessedDecade)
+    {
+        if (currentItem.value is int year)
+        {
+            int actualDecade = (year / 10) * 10;
+            return actualDecade == guessedDecade;
+        }
+        return false;
+    }
+
     public void AddCard(QuizItem<T> item)
     {
         if (item != null)

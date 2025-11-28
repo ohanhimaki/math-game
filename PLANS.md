@@ -8,9 +8,9 @@ The objective is to create new game modes, specifically focusing on a Spotify Pl
 
 ## Spotify Playlist Quiz Game (CSV-based Approach)
 
-**Status: ✅ Fully Implemented and Production Ready**
+**Status: ✅ Fully Implemented and Production Ready - Complete HITSTER-style gameplay**
 
-This game mode allows players to guess the release year of songs from a Spotify playlist. The game is created by uploading a CSV file exported from tools like [Chosic Spotify Playlist Exporter](https://www.chosic.com/spotify-playlist-exporter/).
+This game mode allows players to guess the release year of songs from a Spotify playlist. The game is created by uploading a CSV file exported from tools like [Chosic Spotify Playlist Exporter](https://www.chosic.com/spotify-playlist-exporter/). Includes full HITSTER mechanics: ryöstö cards (challenge tokens), decade guessing for beginners, and artist/song name bonus guessing.
 
 ### Implementation Details:
 
@@ -28,10 +28,12 @@ This game mode allows players to guess the release year of songs from a Spotify 
     *   The `QuizFactory` now uses the `CsvQuizParser` to create a `QuizGame<int>` instance from the uploaded CSV content.
 
 4.  **Game UI (`RunQuizGame.razor`):**
-    *   The `RunQuizGame.razor` component is used to play the game.
+    *   The `RunQuizGame.razor` component is used to play the game (~1,190 lines).
     *   Spotify Web and Desktop buttons allow players to listen to songs.
-    *   QR code with MudBlazor theme colors (Primary violet) for easy mobile scanning.
+    *   QR code with Christmas Red theme colors for easy mobile scanning.
     *   Clean, modern UI with gradient result dialogs (green/red).
+    *   Artist/song guess checkbox integrated into result dialog.
+    *   Full HITSTER gameplay mechanics implemented.
 
 ### Security Considerations:
 
@@ -93,12 +95,36 @@ This game mode allows players to guess the release year of songs from a Spotify 
 ### Future Enhancements:
 
 #### Priority
+*   ✅ **Ryöstö** - Implemented 2025-11-28
+    - Each player starts with configurable number of ryöstö cards (default: 2)
+    - **Ohita kappale (Skip song)**: Use 1 ryöstö card to skip the current song and draw a new one
+    - **Haasta (Challenge)**: Use 1 ryöstö card to challenge opponent's placement. If correct, challenger gets the card
+    - **Vaihda korttiin (Trade for card)**: Use 3 ryöstö cards to get the current card without guessing
+    - **Ansaitse lisää**: 
+      - Players earn 1 ryöstö card for every 5 correct answers
+      - Players can shout artist + song before placing - checkbox in result dialog to award card
+    - UI shows ryöstö card count for each player
+    - Challenge mode: Other players can challenge active player's placement before card is revealed
+    - Visual indicators for challenge mode (red buttons, status chips)
 *   **PWA support** - Progressive Web App to persist game state (continue if browser crashes)
 *   **Dynamic preset listing** - Auto-generate preset list at build time (JSON index of wwwroot/spotify-quizzes/)
 *   **Sound effects** - Optional audio feedback for correct/wrong answers (with toggle)
 *   **CSV template download** - Provide example CSV template for custom quiz creation
 
 #### Completed
+*   ✅ Pelisääntöjen valinta alussa - Implemented 2025-11-28
+    - Toggle for enabling/disabling ryöstö cards (challenge system)
+    - Adjustable initial ryöstö card count (0-10) when enabled
+    - Toggle for enabling/disabling decade guessing for single card
+    - Both rules default to enabled for full HITSTER experience
+    - All UI elements conditionally rendered based on settings
+*   ✅ Vuosikymmen-arvaus kun vain 1 kortti - Implemented 2025-11-28
+    - When player has only 1 card, they must guess the decade instead of exact placement
+    - System dynamically scans all cards in game to determine available decades
+    - Large decade buttons shown (e.g., "1980-luku", "1990-luku", etc.)
+    - Yellow warning message explains the special rule
+    - Placement buttons hidden during decade guessing
+    - Challenge functionality disabled when active player has 1 card
 *   ✅ Ability to press button on players/teams card to CELEBRATE WINNER (show also all teams ordered)
 *   ✅ Show artist + song always as: artist - songname (no songname by artist)
 *   ✅ Fix spotify web player link
@@ -120,6 +146,13 @@ This game mode allows players to guess the release year of songs from a Spotify 
 *   ✅ **Visual position indicators** - White numbered labels on placement buttons
 *   ✅ **Larger answer display** - Answer text and value increased to Typo.h3 (bold)
 *   ✅ **High contrast selection** - Selected placement position shows in white
+
+### Recent Updates (2025-11-28):
+*   ✅ **Ryöstökortit** - Skip song (1 card), Challenge opponent (1 card), Trade for card (3 cards)
+*   ✅ **Decade guessing when 1 card** - Player must guess decade instead of placement, dynamic decade detection from all cards in game
+*   ✅ **Ryöstö card earning** - Players earn 1 ryöstö card every 5 correct answers (works in all modes)
+*   ✅ **Artist & song guessing** - Players shout artist + song during turn, checkbox in result dialog to award ryöstö card
+*   ✅ **Game rule configuration** - Toggle ryöstö cards and decade guessing at game start
 
 ## Generic Quiz Game (Non-Spotify)
 
