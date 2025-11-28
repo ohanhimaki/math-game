@@ -103,8 +103,17 @@
                     {
                         <MudChip T="string" Size="Size.Small" Color="Color.Primary">Vuorossa</MudChip>
                     }
+                    @if (_challengeMode && player == _challengedPlayer)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Error">Haastettu!</MudChip>
+                    }
+                    @if (_challengeMode && player == _challengingPlayer)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Warning">Haastaa</MudChip>
+                    }
                 </MudText>
                 <MudText Color="Color.Success">Pisteet: @player.Cards.Count</MudText>
+                <MudText Color="Color.Warning">🎴 Ryöstökortit: @player.RyostoCards</MudText>
                 @if (player.FailedCards.Count > 0)
                 {
                     <MudButton OnClick="() => ShowFailedCardsHistory(player)" 
@@ -112,6 +121,46 @@
                                Color="Color.Error" 
                                Size="Size.Small">
                         Väärät: @player.FailedCards.Count
+                    </MudButton>
+                }
+                @if (isActivePlayer && CurrentItem != null && !_challengeMode)
+                {
+                    <MudButton OnClick="UseRyostoSkipSong"
+                               Variant="Variant.Outlined"
+                               Color="Color.Warning"
+                               Size="Size.Small"
+                               Disabled="@(player.RyostoCards < 1)"
+                               Style="margin-left: 8px;">
+                        🎴 Ohita kappale (1)
+                    </MudButton>
+                    <MudButton OnClick="UseRyostoTradeForCard"
+                               Variant="Variant.Outlined"
+                               Color="Color.Warning"
+                               Size="Size.Small"
+                               Disabled="@(player.RyostoCards < 3)"
+                               Style="margin-left: 8px;">
+                        🎴 Vaihda korttiin (3)
+                    </MudButton>
+                }
+                @if (!isActivePlayer && CurrentItem != null && !_challengeMode && _activePlacementKey != null && Game.CurrentPlayer != null && Game.CurrentPlayer.Cards.Count > 1)
+                {
+                    <MudButton OnClick="() => StartChallenge(player)"
+                               Variant="Variant.Outlined"
+                               Color="Color.Error"
+                               Size="Size.Small"
+                               Disabled="@(player.RyostoCards < 1)"
+                               Style="margin-left: 8px;">
+                        🎴 Haasta! (1)
+                    </MudButton>
+                }
+                @if (_challengeMode && player == _challengingPlayer)
+                {
+                    <MudButton OnClick="CancelChallenge"
+                               Variant="Variant.Text"
+                               Color="Color.Default"
+                               Size="Size.Small"
+                               Style="margin-left: 8px;">
+                        Peruuta haaste
                     </MudButton>
                 }
             </MudStack>
@@ -126,20 +175,26 @@
 
         @* Pelaajan kortit horisontaalisesti *@
         <MudStack Row Class="mt-3" Style="overflow-x: auto; flex-wrap: nowrap; position: relative; padding-left: 20px;">
+            @{
+                var hasOnlyOneCard = player.Cards.Count == 1;
+                var showPlacementButtons = (isActivePlayer && CurrentItem is not null && !_challengeMode && !hasOnlyOneCard) || 
+                                          (_challengeMode && player == _challengedPlayer);
+            }
+            
             @* Aseta tähän -painike ennen ensimmäistä korttia *@
-            @if (isActivePlayer && CurrentItem is not null)
+            @if (showPlacementButtons)
             {
                 var placementKey = $"{player.Name}_null";
-                var isActivePlacement = _activePlacementKey == placementKey;
+                var isActivePlacement = _challengeMode ? _selectedChallengePositionKey == placementKey : _activePlacementKey == placementKey;
                 var placementIndex = _availablePlacements.FindIndex(p => p.key == placementKey);
                 <div style="position: relative; width: 0; display: flex; flex-direction: column; align-items: center; z-index: 10;">
                     <MudIconButton
-                        OnClick="() => TogglePlacement(player, placementKey, null, player.Cards.FirstOrDefault())"
+                        OnClick="@(() => { if (_challengeMode) SelectChallengePosition(placementKey); else TogglePlacement(player, placementKey, null, player.Cards.FirstOrDefault()); })"
                         Icon="@(isActivePlacement ? Icons.Material.Filled.AddCircle : Icons.Material.Outlined.AddCircleOutline)"
-                        Color="@(isActivePlacement ? Color.Default : Color.Secondary)"
+                        Color="@(isActivePlacement ? Color.Default : (_challengeMode ? Color.Error : Color.Secondary))"
                         Size="Size.Large"
                         Style="@(isActivePlacement ? "margin-left: -20px; color: white;" : "margin-left: -20px;")" />
-                    @if (placementIndex >= 0 && placementIndex <= 9)
+                    @if (placementIndex >= 0 && placementIndex <= 9 && !_challengeMode)
                     {
                         <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Style="color: white; font-weight: bold;">@placementIndex</MudChip>
                     }
@@ -168,7 +223,7 @@
                     </MudCard>
 
                     @* Aseta tähän -painike korttien välissä *@
-                    @if (isActivePlayer && CurrentItem is not null)
+                    @if (showPlacementButtons)
                     {
                         var prev = player.Cards[cardIndex];
                         var next = cardIndex + 1 < player.Cards.Count ? player.Cards[cardIndex + 1] : null;
@@ -179,17 +234,17 @@
                         if (shouldShowButton)
                         {
                             var placementKey = $"{player.Name}_{prev.id}";
-                            var isActivePlacement = _activePlacementKey == placementKey;
+                            var isActivePlacement = _challengeMode ? _selectedChallengePositionKey == placementKey : _activePlacementKey == placementKey;
                             var placementIndex = _availablePlacements.FindIndex(p => p.key == placementKey);
 
                             <div style="position: relative; width: 0; display: flex; flex-direction: column; align-items: center; z-index: 10;">
                                 <MudIconButton
-                                    OnClick="() => TogglePlacement(player, placementKey, prev, next)"
+                                    OnClick="@(() => { if (_challengeMode) SelectChallengePosition(placementKey); else TogglePlacement(player, placementKey, prev, next); })"
                                     Icon="@(isActivePlacement ? Icons.Material.Filled.AddCircle : Icons.Material.Outlined.AddCircleOutline)"
-                                    Color="@(isActivePlacement ? Color.Default : Color.Secondary)"
+                                    Color="@(isActivePlacement ? Color.Default : (_challengeMode ? Color.Error : Color.Secondary))"
                                     Size="Size.Large"
                                     Style="@(isActivePlacement ? "margin-left: -20px; color: white;" : "margin-left: -20px;")" />
-                                @if (placementIndex >= 0 && placementIndex <= 9)
+                                @if (placementIndex >= 0 && placementIndex <= 9 && !_challengeMode)
                                 {
                                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Style="color: white; font-weight: bold;">@placementIndex</MudChip>
                                 }
@@ -199,9 +254,64 @@
                 }
             }
         </MudStack>
+
+        @* Vuosikymmenvalinta kun vain 1 kortti *@
+        @if (isActivePlayer && CurrentItem is not null && !_challengeMode && player.Cards.Count == 1)
+        {
+            var decades = Game.GetAvailableDecades();
+            <MudPaper Class="mt-4 pa-4" Elevation="8" Style="background: linear-gradient(135deg, rgba(196, 30, 58, 0.1) 0%, rgba(22, 91, 51, 0.1) 100%); border: 2px solid var(--mud-palette-warning);">
+                <MudText Typo="Typo.h5" Color="Color.Warning" Class="mb-3" Align="Align.Center" Style="font-weight: bold;">
+                    ⚠️ ERIKOISSÄÄNTÖ: Arvaa kappaleen vuosikymmen!
+                </MudText>
+                <MudText Typo="Typo.body1" Color="Color.Default" Class="mb-4" Align="Align.Center">
+                    Kun sinulla on vain 1 kortti, sinun täytyy arvata oikea vuosikymmen
+                </MudText>
+                <MudStack Row Spacing="3" Style="flex-wrap: wrap; justify-content: center;">
+                    @foreach (var decade in decades)
+                    {
+                        var isSelected = _selectedDecade == decade;
+                        <MudButton 
+                            OnClick="() => SelectDecade(decade)"
+                            Variant="Variant.Filled"
+                            Color="@(isSelected ? Color.Primary : Color.Default)"
+                            Size="Size.Large"
+                            Style="@(isSelected ? "min-width: 140px; height: 80px; font-size: 1.5rem; font-weight: bold;" : "min-width: 140px; height: 80px; font-size: 1.3rem; background-color: white; color: black; border: 2px solid #ddd;")">
+                            @decade-luku
+                        </MudButton>
+                    }
+                </MudStack>
+                @if (_selectedDecade.HasValue)
+                {
+                    <MudButton 
+                        OnClick="ConfirmDecadeGuess"
+                        Variant="Variant.Filled"
+                        Color="Color.Success"
+                        FullWidth="true"
+                        Class="mt-4"
+                        Size="Size.Large"
+                        Style="height: 70px; font-size: 1.4rem; font-weight: bold;">
+                        ✅ Vahvista arvaus: @_selectedDecade-luku
+                    </MudButton>
+                }
+            </MudPaper>
+        }
     </MudPaper>
 }
 </div>
+
+@* Vahvista haaste -painike *@
+@if (_challengeMode && _selectedChallengePositionKey != null)
+{
+    var selectedPlacement = _availablePlacements.FirstOrDefault(p => p.key == _selectedChallengePositionKey);
+    <MudButton Variant="Variant.Filled" 
+               Color="Color.Error" 
+               OnClick="() => ConfirmChallenge(selectedPlacement.prev, selectedPlacement.next)" 
+               FullWidth="true" 
+               Size="Size.Large"
+               Class="mb-3">
+        Vahvista haaste!
+    </MudButton>
+}
 
 @* Seuraava pelaaja -painike *@
 @if (CurrentItem is null && _answerGiven)
@@ -449,6 +559,15 @@
     private int _currentPlacementIndex = 0;
     private List<(string key, Player<T> player, QuizItem<T>? prev, QuizItem<T>? next)> _availablePlacements = new();
     private DotNetObjectReference<RunQuizGame<T>>? _dotNetRef;
+    
+    // Haastetila
+    private bool _challengeMode = false;
+    private Player<T>? _challengingPlayer = null;
+    private Player<T>? _challengedPlayer = null;
+    private string? _selectedChallengePositionKey = null;
+    
+    // Vuosikymmenvalinta (kun vain 1 kortti)
+    private int? _selectedDecade = null;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -666,6 +785,205 @@
         }
     }
 
+    private async Task UseRyostoSkipSong()
+    {
+        var currentPlayer = Game.CurrentPlayer;
+        if (currentPlayer == null || currentPlayer.RyostoCards <= 0 || CurrentItem == null)
+        {
+            SnackBar.Add("Ei ryöstokortteja tai ei kappaletta!", Severity.Error);
+            return;
+        }
+
+        currentPlayer.RyostoCards--;
+        SnackBar.Add($"{currentPlayer.Name} käytti ryöstokortin! Uusi kappale tulossa...", Severity.Info);
+        
+        // Palauta nykyinen kappale takaisin pakaan
+        if (CurrentItem != null)
+        {
+            Game.ReturnQuestion(CurrentItem);
+        }
+        
+        await DrawNext();
+        StateHasChanged();
+    }
+
+    private void UseRyostoTradeForCard()
+    {
+        var currentPlayer = Game.CurrentPlayer;
+        if (currentPlayer == null || currentPlayer.RyostoCards < 3)
+        {
+            SnackBar.Add("Tarvitset 3 ryöstokorttia!", Severity.Error);
+            return;
+        }
+
+        if (CurrentItem == null)
+        {
+            SnackBar.Add("Ei kappaletta pelattavana!", Severity.Error);
+            return;
+        }
+
+        currentPlayer.RyostoCards -= 3;
+        currentPlayer.AddCard(CurrentItem);
+        currentPlayer.SortCards();
+        
+        SnackBar.Add($"{currentPlayer.Name} vaihtoi 3 ryöstokorttia kappaleeseen!", Severity.Success);
+        
+        CurrentItem = null;
+        _answerGiven = true;
+        StateHasChanged();
+    }
+
+    private void StartChallenge(Player<T> challenger)
+    {
+        if (challenger.RyostoCards < 1)
+        {
+            SnackBar.Add("Tarvitset 1 ryöstokortin haastaaksesi!", Severity.Error);
+            return;
+        }
+
+        var activePlayer = Game.CurrentPlayer;
+        if (activePlayer == null || activePlayer == challenger)
+        {
+            SnackBar.Add("Et voi haastaa itseäsi!", Severity.Error);
+            return;
+        }
+
+        _challengeMode = true;
+        _challengingPlayer = challenger;
+        _challengedPlayer = activePlayer;
+        _selectedChallengePositionKey = null;
+        
+        SnackBar.Add($"{challenger.Name} haastaa pelaajan {activePlayer.Name}! Valitse oikea positio kortille.", Severity.Info);
+        StateHasChanged();
+    }
+
+    private void SelectChallengePosition(string positionKey)
+    {
+        if (_selectedChallengePositionKey == positionKey)
+        {
+            // Second click - confirm challenge
+            var selectedPlacement = _availablePlacements.FirstOrDefault(p => p.key == positionKey);
+            ConfirmChallenge(selectedPlacement.prev, selectedPlacement.next);
+        }
+        else
+        {
+            // First click - select position
+            _selectedChallengePositionKey = positionKey;
+            StateHasChanged();
+        }
+    }
+
+    private void ConfirmChallenge(QuizItem<T>? prev, QuizItem<T>? next)
+    {
+        if (_challengingPlayer == null || _challengedPlayer == null || CurrentItem == null)
+        {
+            CancelChallenge();
+            return;
+        }
+
+        // Use ryöstö card
+        _challengingPlayer.RyostoCards--;
+
+        // Check if the guess is correct
+        var isCorrect = _challengingPlayer.CheckOrderGuess(CurrentItem, prev, next);
+
+        if (isCorrect)
+        {
+            // Challenger wins - gets the card
+            _challengingPlayer.AddCard(CurrentItem);
+            _challengingPlayer.SortCards();
+            CheckAndAwardRyostoCard(_challengingPlayer);
+            SnackBar.Add($"{_challengingPlayer.Name} arvasi oikein ja saa kortin!", Severity.Success);
+        }
+        else
+        {
+            // Challenger loses - challenged player continues normally
+            SnackBar.Add($"{_challengingPlayer.Name} arvasi väärin! {_challengedPlayer.Name} jatkaa.", Severity.Error);
+            _challengeMode = false;
+            _challengingPlayer = null;
+            _challengedPlayer = null;
+            _selectedChallengePositionKey = null;
+            StateHasChanged();
+            return;
+        }
+
+        CurrentItem = null;
+        _answerGiven = true;
+        _challengeMode = false;
+        _challengingPlayer = null;
+        _challengedPlayer = null;
+        _selectedChallengePositionKey = null;
+        StateHasChanged();
+    }
+
+    private void CancelChallenge()
+    {
+        _challengeMode = false;
+        _challengingPlayer = null;
+        _challengedPlayer = null;
+        _selectedChallengePositionKey = null;
+        SnackBar.Add("Haaste peruttu!", Severity.Info);
+        StateHasChanged();
+    }
+
+    private void SelectDecade(int decade)
+    {
+        _selectedDecade = decade;
+        StateHasChanged();
+    }
+
+    private void ConfirmDecadeGuess()
+    {
+        var currentPlayer = Game.CurrentPlayer;
+        if (currentPlayer == null || CurrentItem == null || !_selectedDecade.HasValue)
+        {
+            return;
+        }
+
+        var isCorrect = currentPlayer.CheckDecadeGuess(CurrentItem, _selectedDecade.Value);
+
+        // Tallenna vastauksen tiedot dialogia varten
+        _lastAnswerCorrect = isCorrect;
+        _lastAnswerText = CurrentItem.text ?? "";
+        _lastAnswerValue = CurrentItem.value?.ToString() ?? "";
+        _lastAnswerUri = CurrentItem.Uri ?? "";
+        _lastAnswerItem = CurrentItem;
+        _lastAnswerPlayer = currentPlayer;
+        _lastAnswerPrev = null;
+        _lastAnswerNext = null;
+
+        if (isCorrect)
+        {
+            currentPlayer.AddCard(CurrentItem);
+            currentPlayer.SortCards();
+            CheckAndAwardRyostoCard(currentPlayer);
+        }
+        else
+        {
+            currentPlayer.AddFailedCard(CurrentItem);
+        }
+
+        // Näytä iso dialogi tuloksesta
+        _showResultDialog = true;
+        CurrentItem = null;
+        _answerGiven = true;
+        _selectedDecade = null;
+        StateHasChanged();
+    }
+
+    private void CheckAndAwardRyostoCard(Player<T> player)
+    {
+        // Ansaitse ryöstokortti joka 5. oikea vastaus
+        int correctAnswers = player.Cards.Count;
+        
+        // Tarkista onko saavutettu uusi 5:n monikerta
+        if (correctAnswers % 5 == 0 && correctAnswers > 0)
+        {
+            player.RyostoCards++;
+            SnackBar.Add($"🎴 {player.Name} ansaitsi ryöstokortin! ({correctAnswers} oikeaa vastausta)", Severity.Success);
+        }
+    }
+
     private Task DrawNext()
     {
         CurrentItem = Game.GetRandomQuestion();
@@ -715,6 +1033,7 @@
         {
             player.AddCard(CurrentItem);
             player.SortCards();
+            CheckAndAwardRyostoCard(player);
         }
         else
         {

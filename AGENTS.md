@@ -1,6 +1,6 @@
 # AGENTS.md - Project Context for AI Agents
 
-**Last Updated:** 2025-11-27  
+**Last Updated:** 2025-11-28  
 **Project:** MathGame.Web - Multi-Game Web Application  
 **Technology Stack:** Blazor WebAssembly, C#, MudBlazor, .NET 9
 
@@ -11,11 +11,12 @@
 MathGame.Web is a Blazor WebAssembly application that hosts multiple interactive quiz games. The primary focus is on the **Spotify Playlist Quiz Game**, where players guess the release year of songs from Spotify playlists.
 
 **Key Statistics:**
-- ~1,841 lines of code (C# + Razor)
+- ~2,000 lines of code (C# + Razor) - increased with ryöstö & decade features
 - 7 Razor pages
 - 4 Razor components
 - 17 C# classes/services
 - 2 JavaScript interop files
+- RunQuizGame.razor: ~1,142 lines (core game logic)
 
 ---
 
@@ -88,6 +89,15 @@ MathGame.Web/
 **Game Mechanics:**
 - **Players**: Multiple players/teams supported (comma-separated names)
 - **Initial Cards**: Configurable 1-10 cards per player at game start
+- **Decade Guessing**: When player has only 1 card, they must guess the song's decade instead of placement
+  - System scans all cards in game to show available decades
+  - Player selects decade (e.g., "1980-luku", "1990-luku") 
+  - If correct, card added to timeline; if wrong, added to failed cards
+- **Ryöstö Cards**: Each player starts with 2 ryöstö (challenge) cards
+  - **Skip Song** (1 card): Skip current song and draw new one
+  - **Challenge** (1 card): Challenge opponent's placement - if correct, steal the song card
+  - **Trade for Card** (3 cards): Get current card without guessing
+  - **Earn more cards**: Get 1 ryöstö card for every 5 correct answers
 - **Cards**: Each player builds a timeline of correctly placed songs
 - **Validation**: System checks if new card fits between adjacent cards
 - **Smart Placement**: Buttons hidden between cards with same value (no point guessing between same years)
@@ -98,6 +108,17 @@ MathGame.Web/
 - **Preset Quizzes**: Radio button to select from `wwwroot/spotify-quizzes/*.csv`
 - **Custom Upload**: Alternative radio option for own CSV files
 - **Placement Selection**: Click + icons between cards or use keyboard shortcuts
+- **Decade Guessing** (1 card only):
+  - Yellow warning message shown when player has only 1 card
+  - Available decades shown as large buttons (e.g., "1980-luku")
+  - Selected decade highlighted, "Vahvista arvaus" button appears
+  - No placement buttons shown during decade guessing mode
+  - Challenge buttons hidden when active player has only 1 card
+- **Ryöstö Cards**: 
+  - Buttons shown for active player: "🎴 Ohita kappale (1)" and "🎴 Vaihda korttiin (3)"
+  - Other players see "🎴 Haasta! (1)" button when active player has selected position
+  - Challenge mode: Red placement buttons on challenged player's timeline
+  - Two-click confirmation for challenges (select position, then confirm)
 - **Two-click confirmation**: First click selects, second confirms (keyboard: select position then Space/Enter)
 - **Keyboard shortcuts**:
   - `0-9`: Jump to placement position (0=first, 9=last or closest available)
@@ -163,6 +184,25 @@ MathGame.Web/
 
 ---
 
+## Recent Updates
+
+### 2025-11-28
+- ✅ **Ryöstökortit** (challenge cards) - Skip song, Challenge opponent, Trade for card
+- ✅ **Decade guessing** - When player has only 1 card, must guess decade instead of placement
+- ✅ **Dynamic decade detection** - System scans all cards to show available decades
+- ✅ **Ryöstö card earning** - Players earn 1 ryöstö card every 5 correct answers
+
+### 2025-11-27
+- ✅ QR code dark mode support - Christmas Red on black (dark) or white (light)
+- ✅ Dark mode AppBar changed to Christmas Red
+- ✅ Darker green secondary color in dark mode (#0d4020)
+- ✅ Added "Parhaat joulubiisit.csv" to preset quizzes
+- ✅ Number key shortcuts (0-9) - Jump to placement positions
+- ✅ Visual position indicators - White numbered labels on placement buttons
+- ✅ Larger answer display - Answer text and value increased to Typo.h3
+
+---
+
 ## Key Technical Implementation Details
 
 ### Generic Type System
@@ -223,6 +263,7 @@ public async ValueTask DisposeAsync()
 - `AvailableQuestions`: Remaining cards
 - `Players[].Cards`: Correctly placed cards (sorted)
 - `Players[].FailedCards`: Incorrect guesses
+- `Players[].RyostoCards`: Number of challenge cards per player
 
 **Dialog States:**
 - `_showResultDialog`: Answer feedback
@@ -234,6 +275,15 @@ public async ValueTask DisposeAsync()
 - `_activePlacementKey`: Currently selected position
 - `_currentPlacementIndex`: Keyboard navigation index
 - `_availablePlacements`: List of valid placement positions
+
+**Challenge Mode:**
+- `_challengeMode`: Boolean for challenge state
+- `_challengingPlayer`: Player who initiated challenge
+- `_challengedPlayer`: Player being challenged
+- `_selectedChallengePositionKey`: Selected position for challenge
+
+**Decade Guessing (1 card):**
+- `_selectedDecade`: Currently selected decade for guessing
 
 ---
 
@@ -288,6 +338,8 @@ builder.Services.AddMudServices();
 - ✅ Scrollable player list for better screen space
 - ✅ Presentation mode (hide card names toggle)
 - ✅ Christmas theme with red/green colors
+- ✅ Ryöstö cards (challenge system) - Skip, Challenge, Trade
+- ✅ Decade guessing when player has only 1 card
 
 ---
 
@@ -353,10 +405,12 @@ dotnet run
 - **Configuration**: Add to `appsettings.json`, inject `IConfiguration`
 
 ### Files to Know
-- **RunQuizGame.razor**: ~800 lines, core game logic - tread carefully
+- **RunQuizGame.razor**: ~1,142 lines, core game logic - tread carefully
+  - Contains decade guessing, challenge mode, placement logic
+  - Most complex component in the project
 - **SpotifyQuizPlayer.razor**: Preset selector and file upload logic
 - **CsvQuizParser.cs**: CSV → Quiz<int> conversion
-- **QuizGame.cs**: Game state, player logic, initial cards configuration
+- **QuizGame.cs**: Game state, player logic, initial cards/ryöstö configuration, decade detection
 - **keyboard.js**: Global keyboard event handling
 
 ---
@@ -387,13 +441,13 @@ dotnet run
 
 ## Future Considerations
 
-- Dynamic preset quiz discovery (scan wwwroot/spotify-quizzes/ automatically)
-- Alternative CSV formats support
-- Offline play support (PWA)
+- Multiple challenge priority (fewest cards → fewest ryöstö → random draw)
 - Score persistence (local storage)
 - Game replay/history
 - Additional game modes (math games already scaffolded)
 - Sound effects for game actions
+- Keyboard shortcuts for ryöstö actions
+- Animation for challenge mode transitions
 
 ---
 
@@ -416,4 +470,4 @@ cat MathGame.Web/appsettings.json
 
 ---
 
-**For AI Agents:** This document provides comprehensive context about the project. Always reference PLANS.md for feature status. Maintain Finnish UI text and MudBlazor design patterns. The RunQuizGame component is the most complex (~780 lines) - make surgical changes only.
+**For AI Agents:** This document provides comprehensive context about the project. Always reference PLANS.md for feature status. Maintain Finnish UI text and MudBlazor design patterns. The RunQuizGame component is the most complex (~1,142 lines) - make surgical changes only. Key recent additions: ryöstö cards (challenge system) and decade guessing for single-card scenarios.
