@@ -115,20 +115,20 @@ This game mode allows players to guess the release year of songs from a Spotify 
 *   ✅ Pelisääntöjen valinta alussa - Implemented 2025-11-28
     - Toggle for enabling/disabling ryöstö cards (challenge system)
     - Adjustable initial ryöstö card count (0-10) when enabled
-    - Toggle for enabling/disabling decade guessing for single card
+    - Toggle for enabling/disabling decade guessing for zero cards
     - Both rules default to enabled for full HITSTER experience
     - All UI elements conditionally rendered based on settings
-*   ✅ Vuosikymmen-arvaus kun vain 1 kortti - Implemented 2025-11-28
-    - When player has only 1 card, they must guess the decade instead of exact placement
+*   ✅ Vuosikymmen-arvaus kun 0 korttia - Updated 2025-11-29
+    - When player has 0 cards, they must guess the decade instead of exact placement
     - System dynamically scans all cards in game to determine available decades
     - Large decade buttons shown (e.g., "1980-luku", "1990-luku", etc.)
     - Yellow warning message explains the special rule
     - Placement buttons hidden during decade guessing
-    - Challenge functionality disabled when active player has 1 card
+    - Challenge functionality disabled when active player has 0 cards
 *   ✅ Ability to press button on players/teams card to CELEBRATE WINNER (show also all teams ordered)
 *   ✅ Show artist + song always as: artist - songname (no songname by artist)
 *   ✅ Fix spotify web player link
-*   ✅ Configurable initial cards per player (1-10)
+*   ✅ Configurable initial cards per player (0-10)
 *   ✅ Scrollable player list (max-height: 60vh) for better screen utilization
 *   ✅ Toggle to hide card names from non-active players (presentation mode)
 *   ✅ Hide placement buttons between cards with same value
@@ -147,9 +147,13 @@ This game mode allows players to guess the release year of songs from a Spotify 
 *   ✅ **Larger answer display** - Answer text and value increased to Typo.h3 (bold)
 *   ✅ **High contrast selection** - Selected placement position shows in white
 
+### Recent Updates (2025-11-29):
+*   ✅ **Decade guessing threshold changed** - Now triggers when player has 0 cards (was 1 card)
+*   ✅ **Initial cards min value** - Changed from 1 to 0, allowing games to start with 0 cards and decade guessing mode
+
 ### Recent Updates (2025-11-28):
 *   ✅ **Ryöstökortit** - Skip song (1 card), Challenge opponent (1 card), Trade for card (3 cards)
-*   ✅ **Decade guessing when 1 card** - Player must guess decade instead of placement, dynamic decade detection from all cards in game
+*   ✅ **Decade guessing** - Player must guess decade instead of placement when having 0 cards, dynamic decade detection from all cards in game
 *   ✅ **Ryöstö card earning** - Players earn 1 ryöstö card every 5 correct answers (works in all modes)
 *   ✅ **Artist & song guessing** - Players shout artist + song during turn, checkbox in result dialog to award ryöstö card
 *   ✅ **Game rule configuration** - Toggle ryöstö cards and decade guessing at game start

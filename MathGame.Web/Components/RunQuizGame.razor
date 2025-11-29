@@ -177,9 +177,11 @@
                 </MudButton>
                 <MudMenu Icon="@Icons.Material.Filled.AdminPanelSettings" 
                          Color="Color.Secondary" 
-                         Variant="Variant.Text"
+                         Variant="Variant.Outlined"
                          Size="Size.Small"
-                         Label="Pelinjohtaja">
+                         Label="Pelinjohtaja"
+                         Dense="false"
+                         FullWidth="false">
                     @if (Game.UseRyostoCards)
                     {
                         <MudMenuItem OnClick="() => AdjustRyostoCards(player, 1)">
@@ -567,13 +569,13 @@
             @* Winner announcement *@
             <MudPaper Elevation="2" Class="pa-3" Style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);">
                 <MudText Typo="Typo.h5" Align="Align.Center" Style="color: #333; font-weight: bold;">
-                    @if (_challengerWasCorrect)
-                    {
-                        <text>🏆 Haastaja voitti - @_lastChallengerPlayer?.Name saa kortin!</text>
-                    }
-                    else if (_challengedWasCorrect)
+                    @if (_lastAnswerCorrect && _lastAnswerPlayer == _lastChallengedPlayer)
                     {
                         <text>🏆 Alkuperäinen vastaus oli oikein - @_lastChallengedPlayer?.Name saa kortin!</text>
+                    }
+                    else if (_lastAnswerCorrect && _lastAnswerPlayer == _lastChallengerPlayer)
+                    {
+                        <text>🏆 Haastaja voitti - @_lastChallengerPlayer?.Name saa kortin!</text>
                     }
                     else
                     {
@@ -849,24 +851,22 @@
     [JSInvokable]
     public void HandleKeyPress(string key)
     {
-        // Ignore keyboard input if editing a value (TextField is active)
-        if (_isEditingValue)
+        // When dialogs are open, only handle Space to close them, block game shortcuts
+        if (_showResultDialog || _showChallengeResultDialog || _showAddManualCardDialog || _showFailedHistoryDialog || _showWinnerDialog)
         {
-            return;
-        }
-        
-        // Handle Space in result dialog
-        if (_showResultDialog && key == " ")
-        {
-            CloseResultDialog();
-            return;
-        }
-        
-        // Handle Space in challenge result dialog
-        if (_showChallengeResultDialog && key == " ")
-        {
-            CloseChallengeResultDialog();
-            return;
+            // Only allow Space to close result dialogs
+            if ((_showResultDialog || _showChallengeResultDialog) && key == " ")
+            {
+                if (_showResultDialog)
+                {
+                    CloseResultDialog();
+                }
+                else if (_showChallengeResultDialog)
+                {
+                    CloseChallengeResultDialog();
+                }
+            }
+            return; // Block all game shortcuts when dialogs are open
         }
         
         // Handle Space to advance to next player
@@ -876,7 +876,7 @@
             return;
         }
         
-        if (CurrentItem == null || _showResultDialog || _showChallengeResultDialog) return;
+        if (CurrentItem == null) return;
         
         // Handle Spotify shortcuts
         if (key == "w" || key == "W")
@@ -1210,7 +1210,13 @@
         var originalPlacement = challengePlacements.FirstOrDefault(p => 
             p.prev == _originalPlacementPrev && p.next == _originalPlacementNext);
         
-        if (positionKey == originalPlacement.key)
+        Console.WriteLine($"[SelectChallengePosition] Tarkistetaan:");
+        Console.WriteLine($"  Selected key: {positionKey}");
+        Console.WriteLine($"  Original key: {(originalPlacement != default ? originalPlacement.key : "NULL/NOT FOUND")}");
+        Console.WriteLine($"  Original prev: {(_originalPlacementPrev != null ? _originalPlacementPrev.value.ToString() : "null")}");
+        Console.WriteLine($"  Original next: {(_originalPlacementNext != null ? _originalPlacementNext.value.ToString() : "null")}");
+        
+        if (originalPlacement != default && positionKey == originalPlacement.key)
         {
             SnackBar.Add("Et voi valita samaa paikkaa kuin alkuperäinen vastaus!", Severity.Warning);
             return;
@@ -1273,23 +1279,22 @@
         _lastChallengedNext = _originalPlacementNext;
 
         // Determine winner
-        if (challengerCorrect)
-        {
-            // Challenger wins - gets the card
-            _challengingPlayer.AddCard(CurrentItem);
-            _challengingPlayer.SortCards();
-            CheckAndAwardRyostoCard(_challengingPlayer);
-            _lastAnswerCorrect = true;
-            _lastAnswerPlayer = _challengingPlayer;
-        }
-        else if (originalCorrect)
+        // Jos alkuperäinen on oikein, hän voittaa AINA (vaikka haastaja olisi myös oikein)
+        if (originalCorrect)
         {
             // Original player wins - gets the card
             _challengedPlayer.AddCard(CurrentItem);
             _challengedPlayer.SortCards();
-            CheckAndAwardRyostoCard(_challengedPlayer);
             _lastAnswerCorrect = true;
             _lastAnswerPlayer = _challengedPlayer;
+        }
+        else if (challengerCorrect)
+        {
+            // Challenger wins - gets the card (only if original was wrong)
+            _challengingPlayer.AddCard(CurrentItem);
+            _challengingPlayer.SortCards();
+            _lastAnswerCorrect = true;
+            _lastAnswerPlayer = _challengingPlayer;
         }
         else
         {
@@ -1357,7 +1362,6 @@
         {
             currentPlayer.AddCard(CurrentItem);
             currentPlayer.SortCards();
-            CheckAndAwardRyostoCard(currentPlayer);
         }
         else
         {
@@ -1371,21 +1375,6 @@
         _answerGiven = true;
         _selectedDecade = null;
         StateHasChanged();
-    }
-
-    private void CheckAndAwardRyostoCard(Player<T> player)
-    {
-        if (!Game.UseRyostoCards) return;
-        
-        // Ansaitse ryöstokortti joka 5. oikea vastaus
-        int correctAnswers = player.Cards.Count;
-        
-        // Tarkista onko saavutettu uusi 5:n monikerta
-        if (correctAnswers % 5 == 0 && correctAnswers > 0)
-        {
-            player.RyostoCards++;
-            SnackBar.Add($"🎴 {player.Name} ansaitsi ryöstokortin! ({correctAnswers} oikeaa vastausta)", Severity.Success);
-        }
     }
 
     private Task DrawNext()
@@ -1456,7 +1445,6 @@
         {
             player.AddCard(CurrentItem);
             player.SortCards();
-            CheckAndAwardRyostoCard(player);
         }
         else
         {
@@ -1599,19 +1587,19 @@
                     _challengerWasCorrect = challengerNewResult;
                     _challengedWasCorrect = challengedNewResult;
                     
-                    // Determine new winner
-                    if (challengerNewResult)
-                    {
-                        _lastChallengerPlayer.AddCard(_lastAnswerItem);
-                        _lastChallengerPlayer.SortCards();
-                        _lastAnswerPlayer = _lastChallengerPlayer;
-                        _lastAnswerCorrect = true;
-                    }
-                    else if (challengedNewResult)
+                    // Determine new winner (alkuperäinen voittaa jos molemmat oikein)
+                    if (challengedNewResult)
                     {
                         _lastChallengedPlayer.AddCard(_lastAnswerItem);
                         _lastChallengedPlayer.SortCards();
                         _lastAnswerPlayer = _lastChallengedPlayer;
+                        _lastAnswerCorrect = true;
+                    }
+                    else if (challengerNewResult)
+                    {
+                        _lastChallengerPlayer.AddCard(_lastAnswerItem);
+                        _lastChallengerPlayer.SortCards();
+                        _lastAnswerPlayer = _lastChallengerPlayer;
                         _lastAnswerCorrect = true;
                     }
                     else

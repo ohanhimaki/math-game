@@ -1,6 +1,6 @@
 # AGENTS.md - Project Context for AI Agents
 
-**Last Updated:** 2025-11-28  
+**Last Updated:** 2025-11-29  
 **Project:** MathGame.Web - Multi-Game Web Application  
 **Technology Stack:** Blazor WebAssembly, C#, MudBlazor, .NET 9
 
@@ -78,10 +78,10 @@ MathGame.Web/
 2. User configures game rules:
    - Use ryöstö cards (challenge system) - toggle on/off
    - Initial ryöstö cards per player (if enabled)
-   - Use decade guessing for single card - toggle on/off
+   - Use decade guessing for zero cards - toggle on/off
 3. Preset quizzes loaded from `wwwroot/spotify-quizzes/` via HttpClient
 4. CSV is parsed into `QuizItem<int>` objects (song name, artist, year, Spotify URI)
-5. Players configure initial cards per player (1-10, default: 1)
+5. Players configure initial cards per player (0-10, default: 1)
 6. Players take turns placing cards in chronological order
 7. System validates placement and awards points for correct answers
 
@@ -92,18 +92,34 @@ MathGame.Web/
 
 **Game Mechanics:**
 - **Players**: Multiple players/teams supported (comma-separated names)
-- **Initial Cards**: Configurable 1-10 cards per player at game start
-- **Decade Guessing**: When player has only 1 card, they must guess the song's decade instead of placement
+- **Initial Cards**: Configurable 0-10 cards per player at game start
+- **Decade Guessing**: When player has 0 cards, they must guess the song's decade instead of placement
   - System scans all cards in game to show available decades
   - Player selects decade (e.g., "1980-luku", "1990-luku") 
   - If correct, card added to timeline; if wrong, added to failed cards
-- **Ryöstö Cards**: Each player starts with 2 ryöstö (challenge) cards
-  - **Skip Song** (1 card): Skip current song and draw new one
-  - **Challenge** (1 card): Challenge opponent's placement - if correct, steal the song card
-  - **Trade for Card** (3 cards): Get current card without guessing
-  - **Earn more cards**: 
-    - Get 1 ryöstö card for every 5 correct answers
-    - Get 1 ryöstö card by correctly guessing artist + song title on your turn
+- **Ryöstö Cards** (Challenge Cards System): Configurable special action cards
+  - **Initial Amount**: 0-10 cards per player (configurable at game start, default: 2)
+  - **Can be toggled on/off** at game creation
+  
+  **Actions (costs ryöstö cards):**
+  - **Skip Song** (1 card): Skip current song and draw a new one
+  - **Challenge** (1 card): Challenge opponent's placement
+    - If challenger correct → gets the card
+    - If original player correct → keeps the card  
+    - If BOTH correct → original player wins (has priority)
+    - If both wrong → nobody gets the card
+  - **Trade for Card** (3 cards): Get current card without guessing (automatically correct)
+  
+  **How to earn more ryöstö cards:**
+  - ✅ **Guess artist + song correctly**: Get +1 ryöstö card
+    - Player shouts artist + song before placing
+    - Game master checks checkbox in result dialog if correct
+    - Card awarded when closing the dialog
+  
+  **Game Master Tools** (Admin menu on each player card):
+  - ➕ Add ryöstö card manually
+  - ➖ Remove ryöstö card manually
+  - ➕ Add card manually (input year value)
 - **Cards**: Each player builds a timeline of correctly placed songs
 - **Validation**: System checks if new card fits between adjacent cards
 - **Smart Placement**: Buttons hidden between cards with same value (no point guessing between same years)
@@ -116,18 +132,18 @@ MathGame.Web/
 - **Game Rules Configuration**:
   - Toggle ryöstö cards (challenge system) on/off
   - Set initial ryöstö cards count (0-10)
-  - Toggle decade guessing for single card scenarios
+  - Toggle decade guessing for zero card scenarios
 - **Placement Selection**: Click + icons between cards or use keyboard shortcuts
 - **Artist & Song Guessing**:
   - Player shouts artist + song name before placing (e.g., "Apulanta - Mato, väliin 6!")
   - Game master selects placement and checkbox in result dialog if guess was correct
   - Instant ryöstö card reward when closing result dialog
-- **Decade Guessing** (1 card only):
-  - Yellow warning message shown when player has only 1 card
+- **Decade Guessing** (0 cards only):
+  - Yellow warning message shown when player has 0 cards
   - Available decades shown as large buttons (e.g., "1980-luku")
   - Selected decade highlighted, "Vahvista arvaus" button appears
   - No placement buttons shown during decade guessing mode
-  - Challenge buttons hidden when active player has only 1 card
+  - Challenge buttons hidden when active player has 0 cards
 - **Ryöstö Cards**: 
   - Buttons shown for active player: "🎴 Ohita kappale (1)" and "🎴 Vaihda korttiin (3)"
   - Checkbox in result dialog: "🎤 Pelaaja arvasi myös artisti & kappaleen oikein (+1 🎴)"
@@ -201,11 +217,36 @@ MathGame.Web/
 
 ## Recent Updates
 
+### 2025-11-29 (Evening Session)
+- ✅ **Challenge Result Dialog** - Complete overhaul of challenge results UI
+  - Shows both answers with placement ranges (e.g., "1967-1985", "-1967", "2009-")
+  - Single unified value edit field for both players
+  - Automatic recalculation of winner when value is edited
+  - "Alkuperäinen voittaa" rule: Original player wins if both answers are correct
+- ✅ **Challenge placement validation** - Cannot select same position as original player
+  - Works with both mouse and keyboard (0-9 number keys)
+  - Validates against original placement prev/next values
+- ✅ **Placement storage timing fix** - Original placement saved correctly
+  - Saved on first click (selection) via `_activePlacementPrev/Next`
+  - Copied to `_originalPlacementPrev/Next` on confirmation or challenge start
+  - Works consistently with mouse, arrow keys, and number keys
+- ✅ **Keyboard input in dialogs** - Fixed number input in TextField
+  - JavaScript keyboard handler now checks if target is INPUT/TEXTAREA
+  - Numbers work in edit fields, game shortcuts blocked when dialogs open
+- ✅ **Removed "5 correct answers" ryöstö rule** - Was not part of actual game rules
+  - Deleted `CheckAndAwardRyostoCard()` method completely
+  - Now only: Artist+song guess OR game master manual addition
+- ✅ **Admin menu visibility** - Changed from `Variant.Text` to `Variant.Outlined`
+- 📚 **Documentation updated** - Complete ryöstö card system documented
+
+### 2025-11-29 (Morning Session)
+- ✅ **Decade guessing threshold changed** - Now triggers when player has 0 cards (was 1 card)
+- ✅ **Initial cards min value** - Changed from 1 to 0, allowing games to start with decade guessing
+
 ### 2025-11-28
 - ✅ **Ryöstökortit** (challenge cards) - Skip song, Challenge opponent, Trade for card
-- ✅ **Decade guessing** - When player has only 1 card, must guess decade instead of placement
+- ✅ **Decade guessing** - When player has 0 cards, must guess decade instead of placement
 - ✅ **Dynamic decade detection** - System scans all cards to show available decades
-- ✅ **Ryöstö card earning** - Players earn 1 ryöstö card every 5 correct answers
 - ✅ **Artist & song guessing** - Players can guess artist + song title on their turn to earn 1 ryöstö card
   - Checkbox appears in result dialog after placement
   - Game master checks the box if player guessed correctly before placing
