@@ -145,7 +145,7 @@
                         🎴 Vaihda korttiin (3)
                     </MudButton>
                 }
-                @if (Game.UseRyostoCards && !isActivePlayer && CurrentItem != null && !_challengeMode && _activePlacementKey != null && Game.CurrentPlayer != null && (Game.CurrentPlayer.Cards.Count > 1 || !Game.UseDecadeGuessing))
+                @if (Game.UseRyostoCards && !isActivePlayer && CurrentItem != null && !_challengeMode && _activePlacementKey != null && Game.CurrentPlayer != null && (Game.CurrentPlayer.Cards.Count > 0 || !Game.UseDecadeGuessing))
                 {
                     <MudButton OnClick="() => StartChallenge(player)"
                                Variant="Variant.Outlined"
@@ -167,21 +167,44 @@
                     </MudButton>
                 }
             </MudStack>
-            <MudButton OnClick="ShowWinnerCelebration" 
-                       Variant="Variant.Filled" 
-                       Color="Color.Success" 
-                       StartIcon="@Icons.Material.Filled.EmojiEvents"
-                       Size="Size.Small">
-                Juhli voittajaa!
-            </MudButton>
+            <MudStack Row>
+                <MudButton OnClick="ShowWinnerCelebration" 
+                           Variant="Variant.Filled" 
+                           Color="Color.Success" 
+                           StartIcon="@Icons.Material.Filled.EmojiEvents"
+                           Size="Size.Small">
+                    Juhli voittajaa!
+                </MudButton>
+                <MudMenu Icon="@Icons.Material.Filled.AdminPanelSettings" 
+                         Color="Color.Secondary" 
+                         Variant="Variant.Outlined"
+                         Size="Size.Small"
+                         Label="Pelinjohtaja"
+                         Dense="false"
+                         FullWidth="false">
+                    @if (Game.UseRyostoCards)
+                    {
+                        <MudMenuItem OnClick="() => AdjustRyostoCards(player, 1)">
+                            ➕ Lisää ryöstokortti
+                        </MudMenuItem>
+                        <MudMenuItem OnClick="() => AdjustRyostoCards(player, -1)" Disabled="@(player.RyostoCards <= 0)">
+                            ➖ Poista ryöstokortti
+                        </MudMenuItem>
+                        <MudDivider />
+                    }
+                    <MudMenuItem OnClick="() => ShowAddManualCard(player)">
+                        ➕ Lisää kortti manuaalisesti
+                    </MudMenuItem>
+                </MudMenu>
+            </MudStack>
         </MudStack>
 
         @* Pelaajan kortit horisontaalisesti *@
         <MudStack Row Class="mt-3" Style="overflow-x: auto; flex-wrap: nowrap; position: relative; padding-left: 20px;">
             @{
-                var hasOnlyOneCard = player.Cards.Count == 1;
-                var shouldHidePlacementForOneCard = hasOnlyOneCard && Game.UseDecadeGuessing;
-                var showPlacementButtons = (isActivePlayer && CurrentItem is not null && !_challengeMode && !shouldHidePlacementForOneCard) || 
+                var hasNoCards = player.Cards.Count == 0;
+                var shouldHidePlacementForNoCards = hasNoCards && Game.UseDecadeGuessing;
+                var showPlacementButtons = (isActivePlayer && CurrentItem is not null && !_challengeMode && !shouldHidePlacementForNoCards) || 
                                           (_challengeMode && player == _challengedPlayer);
             }
             
@@ -259,8 +282,8 @@
             }
         </MudStack>
 
-        @* Vuosikymmenvalinta kun vain 1 kortti *@
-        @if (Game.UseDecadeGuessing && isActivePlayer && CurrentItem is not null && !_challengeMode && player.Cards.Count == 1)
+        @* Vuosikymmenvalinta kun ei kortteja *@
+        @if (Game.UseDecadeGuessing && isActivePlayer && CurrentItem is not null && !_challengeMode && player.Cards.Count == 0)
         {
             var decades = Game.GetAvailableDecades();
             <MudPaper Class="mt-4 pa-4" Elevation="8" Style="background: linear-gradient(135deg, rgba(196, 30, 58, 0.1) 0%, rgba(22, 91, 51, 0.1) 100%); border: 2px solid var(--mud-palette-warning);">
@@ -268,7 +291,7 @@
                     ⚠️ ERIKOISSÄÄNTÖ: Arvaa kappaleen vuosikymmen!
                 </MudText>
                 <MudText Typo="Typo.body1" Color="Color.Default" Class="mb-4" Align="Align.Center">
-                    Kun sinulla on vain 1 kortti, sinun täytyy arvata oikea vuosikymmen
+                    Kun sinulla ei ole kortteja, sinun täytyy arvata oikea vuosikymmen
                 </MudText>
                 <MudStack Row Spacing="3" Style="flex-wrap: wrap; justify-content: center;">
                     @foreach (var decade in decades)
@@ -456,6 +479,144 @@
     </DialogActions>
 </MudDialog>
 
+@* Dialogi haasteen tulokselle *@
+<MudDialog @bind-Visible="_showChallengeResultDialog" Options="_challengeResultDialogOptions">
+    <TitleContent>
+        <MudPaper Class="pa-4" Style="background: linear-gradient(135deg, #ff9800 0%, #ffa726 100%);">
+            <MudText Typo="Typo.h3" Align="Align.Center" Style="color: white; font-weight: bold;">
+                <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Size="Size.Large" Style="color: white;" />
+                HAASTE!
+            </MudText>
+        </MudPaper>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="3" Class="pt-4">
+            @* Song info *@
+            <MudText Typo="Typo.h4" Align="Align.Center" Style="font-weight: bold;">@_lastAnswerText</MudText>
+            
+            @* Correct value display with edit capability *@
+            <MudStack Row AlignItems="AlignItems.Center" Spacing="2" Justify="Justify.Center">
+                <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Primary" Style="font-weight: bold;">
+                    Arvo:
+                </MudText>
+                @if (_isEditingValue)
+                {
+                    <MudTextField @bind-Value="_editedValue" 
+                                  Variant="Variant.Outlined" 
+                                  Margin="Margin.Dense"
+                                  Style="width: 100px;" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Check" 
+                                   Color="Color.Success" 
+                                   OnClick="SaveEditedChallengeValue"
+                                   Size="Size.Small" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Close" 
+                                   Color="Color.Error" 
+                                   OnClick="CancelEditValue"
+                                   Size="Size.Small" />
+                }
+                else
+                {
+                    <MudText Typo="Typo.h3" Align="Align.Center" Color="Color.Primary" Style="font-weight: bold;">
+                        @_lastAnswerValue
+                    </MudText>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                   Color="Color.Primary" 
+                                   OnClick="StartEditValue"
+                                   Size="Size.Small" />
+                }
+            </MudStack>
+            
+            @* Challenged player's answer (ORIGINAL PLAYER) *@
+            <MudPaper Elevation="4" Class="pa-3" Style="@(_challengedWasCorrect ? "background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);" : "background: linear-gradient(135deg, #f44336 0%, #ef5350 100%);")">
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6" Style="color: white; font-weight: bold;">
+                        @if (_challengedWasCorrect)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Medium" Style="color: white;" />
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Cancel" Size="Size.Medium" Style="color: white;" />
+                        }
+                        Alkuperäinen vastaus: @_lastChallengedPlayer?.Name
+                    </MudText>
+                    <MudText Typo="Typo.h6" Style="color: white; font-weight: bold;">
+                        Väli: @FormatPlacementRange(_lastChallengedPrev, _lastChallengedNext)
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+            
+            @* Challenger's answer *@
+            <MudPaper Elevation="4" Class="pa-3" Style="@(_challengerWasCorrect ? "background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);" : "background: linear-gradient(135deg, #f44336 0%, #ef5350 100%);")">
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6" Style="color: white; font-weight: bold;">
+                        @if (_challengerWasCorrect)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Medium" Style="color: white;" />
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Cancel" Size="Size.Medium" Style="color: white;" />
+                        }
+                        Haastajan vastaus: @_lastChallengerPlayer?.Name
+                    </MudText>
+                    <MudText Typo="Typo.h6" Style="color: white; font-weight: bold;">
+                        Väli: @FormatPlacementRange(_lastChallengerPrev, _lastChallengerNext)
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+            
+            @* Winner announcement *@
+            <MudPaper Elevation="2" Class="pa-3" Style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);">
+                <MudText Typo="Typo.h5" Align="Align.Center" Style="color: #333; font-weight: bold;">
+                    @if (_lastAnswerCorrect && _lastAnswerPlayer == _lastChallengedPlayer)
+                    {
+                        <text>🏆 Alkuperäinen vastaus oli oikein - @_lastChallengedPlayer?.Name saa kortin!</text>
+                    }
+                    else if (_lastAnswerCorrect && _lastAnswerPlayer == _lastChallengerPlayer)
+                    {
+                        <text>🏆 Haastaja voitti - @_lastChallengerPlayer?.Name saa kortin!</text>
+                    }
+                    else
+                    {
+                        <text>❌ Molemmat väärin - ei pistettä!</text>
+                    }
+                </MudText>
+            </MudPaper>
+            
+            @if (!string.IsNullOrEmpty(_lastAnswerText))
+            {
+                var searchQuery = $"release date {_lastAnswerText}";
+                var searchUrl = $"https://www.google.com/search?q={Uri.EscapeDataString(searchQuery)}";
+                
+                <MudButton
+                    Href="@searchUrl"
+                    Target="_blank"
+                    Variant="Variant.Outlined"
+                    Color="Color.Info"
+                    StartIcon="@Icons.Material.Filled.Search"
+                    Size="Size.Small"
+                    FullWidth="true">
+                    Tarkista julkaisuvuosi
+                </MudButton>
+            }
+            
+            @if (Game.UseRyostoCards && _lastChallengedPlayer != null)
+            {
+                <MudDivider Class="my-3" />
+                <MudCheckBox @bind-Value="_guessedArtistAndSong" 
+                             Color="Color.Warning"
+                             Label="🎤 Alkuperäinen pelaaja arvasi myös artisti & kappaleen oikein (+1 🎴)" />
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseChallengeResultDialog" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Size="Size.Large">
+            Jatka <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Style="color: white;">Space</MudChip>
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
 @* Dialogi voittajan juhlalle *@
 <MudDialog @bind-Visible="_showWinnerDialog" Options="_winnerDialogOptions">
     <TitleContent>
@@ -527,6 +688,24 @@
     </DialogActions>
 </MudDialog>
 
+@* Dialogi manuaaliselle kortin lisäykselle *@
+<MudDialog @bind-Visible="_showAddManualCardDialog" Options="_manualCardDialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Lisää kortti pelaajalle: @_manualCardPlayer?.Name</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="_manualCardValue"
+                      Label="Vuosiluku"
+                      Variant="Variant.Outlined"
+                      HelperText="Syötä kortin vuosiluku (esim. 1985)"
+                      Immediate="true" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CancelAddManualCard" Variant="Variant.Text">Peruuta</MudButton>
+        <MudButton OnClick="ConfirmAddManualCard" Variant="Variant.Filled" Color="Color.Primary">Lisää</MudButton>
+    </DialogActions>
+</MudDialog>
+
 
 @code {
     [Parameter] public required QuizGame<T> Game { get; set; }
@@ -553,6 +732,12 @@
     private DialogOptions _winnerDialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
     private string? _celebrationTrackId;
     
+    // Manuaalisen kortin lisäys
+    private bool _showAddManualCardDialog = false;
+    private Player<T>? _manualCardPlayer = null;
+    private string _manualCardValue = "";
+    private DialogOptions _manualCardDialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true };
+    
     // Esitystila
     private bool _hideCardNames = false;
     
@@ -566,6 +751,8 @@
     
     // Asettamisen tila
     private string? _activePlacementKey = null;
+    private QuizItem<T>? _activePlacementPrev = null;  // Tallenna aktiivisen valinnan prev
+    private QuizItem<T>? _activePlacementNext = null;  // Tallenna aktiivisen valinnan next
     
     // Näppäimistötila
     private int _currentPlacementIndex = 0;
@@ -577,6 +764,22 @@
     private Player<T>? _challengingPlayer = null;
     private Player<T>? _challengedPlayer = null;
     private string? _selectedChallengePositionKey = null;
+    private QuizItem<T>? _originalPlacementPrev = null;
+    private QuizItem<T>? _originalPlacementNext = null;
+    
+    // Challenge result dialog
+    private bool _showChallengeResultDialog = false;
+    private bool _challengerWasCorrect = false;
+    private bool _challengedWasCorrect = false;
+    private Player<T>? _lastChallengerPlayer = null;
+    private Player<T>? _lastChallengedPlayer = null;
+    private string _lastChallengerValue = "";
+    private string _lastChallengedValue = "";
+    private QuizItem<T>? _lastChallengerPrev = null;
+    private QuizItem<T>? _lastChallengerNext = null;
+    private QuizItem<T>? _lastChallengedPrev = null;
+    private QuizItem<T>? _lastChallengedNext = null;
+    private DialogOptions _challengeResultDialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
     
     // Vuosikymmenvalinta (kun vain 1 kortti)
     private int? _selectedDecade = null;
@@ -648,11 +851,22 @@
     [JSInvokable]
     public void HandleKeyPress(string key)
     {
-        // Handle Space in result dialog
-        if (_showResultDialog && key == " ")
+        // When dialogs are open, only handle Space to close them, block game shortcuts
+        if (_showResultDialog || _showChallengeResultDialog || _showAddManualCardDialog || _showFailedHistoryDialog || _showWinnerDialog)
         {
-            CloseResultDialog();
-            return;
+            // Only allow Space to close result dialogs
+            if ((_showResultDialog || _showChallengeResultDialog) && key == " ")
+            {
+                if (_showResultDialog)
+                {
+                    CloseResultDialog();
+                }
+                else if (_showChallengeResultDialog)
+                {
+                    CloseChallengeResultDialog();
+                }
+            }
+            return; // Block all game shortcuts when dialogs are open
         }
         
         // Handle Space to advance to next player
@@ -662,7 +876,7 @@
             return;
         }
         
-        if (CurrentItem == null || _showResultDialog) return;
+        if (CurrentItem == null) return;
         
         // Handle Spotify shortcuts
         if (key == "w" || key == "W")
@@ -676,6 +890,76 @@
             return;
         }
         
+        // Challenge mode keyboard navigation
+        if (_challengeMode && _challengedPlayer != null)
+        {
+            var challengePlacements = new List<(string key, QuizItem<T>? prev, QuizItem<T>? next)>();
+            
+            // Build placements for challenged player
+            challengePlacements.Add(($"{_challengedPlayer.Name}_null", null, _challengedPlayer.Cards.FirstOrDefault()));
+            
+            for (int i = 0; i < _challengedPlayer.Cards.Count; i++)
+            {
+                var prev = _challengedPlayer.Cards[i];
+                var next = i + 1 < _challengedPlayer.Cards.Count ? _challengedPlayer.Cards[i + 1] : null;
+                
+                if (next != null && Equals(prev.value, next.value))
+                {
+                    continue;
+                }
+                
+                challengePlacements.Add(($"{_challengedPlayer.Name}_{prev.id}", prev, next));
+            }
+            
+            if (challengePlacements.Count == 0) return;
+            
+            // Find original placement key
+            var originalKey = challengePlacements.FirstOrDefault(p => 
+                p.prev == _originalPlacementPrev && p.next == _originalPlacementNext).key;
+            
+            switch (key)
+            {
+                case "0":
+                case "1":
+                case "2":
+                case "3":
+                case "4":
+                case "5":
+                case "6":
+                case "7":
+                case "8":
+                case "9":
+                    var numIndex = int.Parse(key);
+                    if (numIndex < challengePlacements.Count)
+                    {
+                        var selectedKey = challengePlacements[numIndex].key;
+                        if (selectedKey == originalKey)
+                        {
+                            SnackBar.Add("Et voi valita samaa paikkaa kuin alkuperäinen vastaus!", Severity.Warning);
+                        }
+                        else
+                        {
+                            _selectedChallengePositionKey = selectedKey;
+                            StateHasChanged();
+                        }
+                    }
+                    break;
+                case " ":
+                case "Enter":
+                    if (_selectedChallengePositionKey != null)
+                    {
+                        var selected = challengePlacements.FirstOrDefault(p => p.key == _selectedChallengePositionKey);
+                        if (selected != default)
+                        {
+                            ConfirmChallenge(selected.prev, selected.next);
+                        }
+                    }
+                    break;
+            }
+            return;
+        }
+        
+        // Normal placement mode
         UpdateAvailablePlacements();
         
         if (_availablePlacements.Count == 0) return;
@@ -714,9 +998,21 @@
                 break;
             case " ":
             case "Enter":
-                if (_activePlacementKey != null)
+                if (_activePlacementKey != null && _currentPlacementIndex < _availablePlacements.Count)
                 {
                     var placement = _availablePlacements[_currentPlacementIndex];
+                    
+                    // Tallenna alkuperäinen valinta ennen vahvistusta
+                    if (placement.player == Game.CurrentPlayer && !_challengeMode)
+                    {
+                        _originalPlacementPrev = placement.prev;
+                        _originalPlacementNext = placement.next;
+                        
+                        Console.WriteLine($"[Keyboard CONFIRM] Tallennettiin alkuperäinen valinta pelaajalle {placement.player.Name}:");
+                        Console.WriteLine($"  prev: {(placement.prev != null ? placement.prev.value.ToString() : "null")}");
+                        Console.WriteLine($"  next: {(placement.next != null ? placement.next.value.ToString() : "null")}");
+                    }
+                    
                     SetHere(placement.player, placement.prev, placement.next);
                 }
                 break;
@@ -779,7 +1075,15 @@
     {
         if (_availablePlacements.Count > 0 && _currentPlacementIndex < _availablePlacements.Count)
         {
-            _activePlacementKey = _availablePlacements[_currentPlacementIndex].key;
+            var placement = _availablePlacements[_currentPlacementIndex];
+            _activePlacementKey = placement.key;
+            _activePlacementPrev = placement.prev;
+            _activePlacementNext = placement.next;
+            
+            Console.WriteLine($"[UpdateActivePlacement] Päivitettiin aktiivinen valinta:");
+            Console.WriteLine($"  prev: {(_activePlacementPrev != null ? _activePlacementPrev.value.ToString() : "null")}");
+            Console.WriteLine($"  next: {(_activePlacementNext != null ? _activePlacementNext.value.ToString() : "null")}");
+            
             StateHasChanged();
         }
     }
@@ -863,6 +1167,14 @@
             return;
         }
 
+        // Tallenna alkuperäisen pelaajan valinta ennen haasteen alkamista
+        _originalPlacementPrev = _activePlacementPrev;
+        _originalPlacementNext = _activePlacementNext;
+        
+        Console.WriteLine($"[StartChallenge] Tallennettiin alkuperäinen valinta:");
+        Console.WriteLine($"  prev: {(_originalPlacementPrev != null ? _originalPlacementPrev.value.ToString() : "null")}");
+        Console.WriteLine($"  next: {(_originalPlacementNext != null ? _originalPlacementNext.value.ToString() : "null")}");
+
         _challengeMode = true;
         _challengingPlayer = challenger;
         _challengedPlayer = activePlayer;
@@ -874,10 +1186,45 @@
 
     private void SelectChallengePosition(string positionKey)
     {
+        if (_challengedPlayer == null) return;
+        
+        // Build challenge placements list
+        var challengePlacements = new List<(string key, QuizItem<T>? prev, QuizItem<T>? next)>();
+        challengePlacements.Add(($"{_challengedPlayer.Name}_null", null, _challengedPlayer.Cards.FirstOrDefault()));
+        
+        for (int i = 0; i < _challengedPlayer.Cards.Count; i++)
+        {
+            var prev = _challengedPlayer.Cards[i];
+            var next = i + 1 < _challengedPlayer.Cards.Count ? _challengedPlayer.Cards[i + 1] : null;
+            
+            if (next != null && Equals(prev.value, next.value))
+            {
+                continue;
+            }
+            
+            challengePlacements.Add(($"{_challengedPlayer.Name}_{prev.id}", prev, next));
+        }
+        
+        // Check if this is the same position as the original answer
+        var selectedPlacement = challengePlacements.FirstOrDefault(p => p.key == positionKey);
+        var originalPlacement = challengePlacements.FirstOrDefault(p => 
+            p.prev == _originalPlacementPrev && p.next == _originalPlacementNext);
+        
+        Console.WriteLine($"[SelectChallengePosition] Tarkistetaan:");
+        Console.WriteLine($"  Selected key: {positionKey}");
+        Console.WriteLine($"  Original key: {(originalPlacement != default ? originalPlacement.key : "NULL/NOT FOUND")}");
+        Console.WriteLine($"  Original prev: {(_originalPlacementPrev != null ? _originalPlacementPrev.value.ToString() : "null")}");
+        Console.WriteLine($"  Original next: {(_originalPlacementNext != null ? _originalPlacementNext.value.ToString() : "null")}");
+        
+        if (originalPlacement != default && positionKey == originalPlacement.key)
+        {
+            SnackBar.Add("Et voi valita samaa paikkaa kuin alkuperäinen vastaus!", Severity.Warning);
+            return;
+        }
+        
         if (_selectedChallengePositionKey == positionKey)
         {
             // Second click - confirm challenge
-            var selectedPlacement = _availablePlacements.FirstOrDefault(p => p.key == positionKey);
             ConfirmChallenge(selectedPlacement.prev, selectedPlacement.next);
         }
         else
@@ -899,35 +1246,79 @@
         // Use ryöstö card
         _challengingPlayer.RyostoCards--;
 
-        // Check if the guess is correct
-        var isCorrect = _challengingPlayer.CheckOrderGuess(CurrentItem, prev, next);
+        // Check both guesses
+        var challengerCorrect = _challengingPlayer.CheckOrderGuess(CurrentItem, prev, next);
+        var originalCorrect = _challengedPlayer.CheckOrderGuess(CurrentItem, _originalPlacementPrev, _originalPlacementNext);
 
-        if (isCorrect)
+        // Debug logging
+        Console.WriteLine($"=== CHALLENGE DEBUG ===");
+        Console.WriteLine($"Challenger: {_challengingPlayer.Name}");
+        Console.WriteLine($"  - Placement: {(prev != null ? prev.value.ToString() : "null")} to {(next != null ? next.value.ToString() : "null")}");
+        Console.WriteLine($"  - Result: {challengerCorrect}");
+        Console.WriteLine($"Challenged (Original): {_challengedPlayer.Name}");
+        Console.WriteLine($"  - Placement: {(_originalPlacementPrev != null ? _originalPlacementPrev.value.ToString() : "null")} to {(_originalPlacementNext != null ? _originalPlacementNext.value.ToString() : "null")}");
+        Console.WriteLine($"  - Result: {originalCorrect}");
+        Console.WriteLine($"======================");
+
+        // Tallenna tiedot dialogia varten
+        _lastAnswerText = CurrentItem.text ?? "";
+        _lastAnswerValue = CurrentItem.value?.ToString() ?? "";
+        _lastAnswerUri = CurrentItem.Uri ?? "";
+        _lastAnswerItem = CurrentItem;
+        
+        // Challenge-specific data
+        _challengerWasCorrect = challengerCorrect;
+        _challengedWasCorrect = originalCorrect;
+        _lastChallengerPlayer = _challengingPlayer;
+        _lastChallengedPlayer = _challengedPlayer;
+        _lastChallengerValue = CurrentItem.value?.ToString() ?? "";
+        _lastChallengedValue = CurrentItem.value?.ToString() ?? "";
+        _lastChallengerPrev = prev;
+        _lastChallengerNext = next;
+        _lastChallengedPrev = _originalPlacementPrev;
+        _lastChallengedNext = _originalPlacementNext;
+
+        // Determine winner
+        // Jos alkuperäinen on oikein, hän voittaa AINA (vaikka haastaja olisi myös oikein)
+        if (originalCorrect)
         {
-            // Challenger wins - gets the card
+            // Original player wins - gets the card
+            _challengedPlayer.AddCard(CurrentItem);
+            _challengedPlayer.SortCards();
+            _lastAnswerCorrect = true;
+            _lastAnswerPlayer = _challengedPlayer;
+        }
+        else if (challengerCorrect)
+        {
+            // Challenger wins - gets the card (only if original was wrong)
             _challengingPlayer.AddCard(CurrentItem);
             _challengingPlayer.SortCards();
-            CheckAndAwardRyostoCard(_challengingPlayer);
-            SnackBar.Add($"{_challengingPlayer.Name} arvasi oikein ja saa kortin!", Severity.Success);
+            _lastAnswerCorrect = true;
+            _lastAnswerPlayer = _challengingPlayer;
         }
         else
         {
-            // Challenger loses - challenged player continues normally
-            SnackBar.Add($"{_challengingPlayer.Name} arvasi väärin! {_challengedPlayer.Name} jatkaa.", Severity.Error);
-            _challengeMode = false;
-            _challengingPlayer = null;
-            _challengedPlayer = null;
-            _selectedChallengePositionKey = null;
-            StateHasChanged();
-            return;
+            // Both wrong - nobody gets the card
+            _challengedPlayer.AddFailedCard(CurrentItem);
+            _lastAnswerCorrect = false;
+            _lastAnswerPlayer = _challengedPlayer;
         }
 
+        // Show challenge result dialog instead of regular result
+        _showChallengeResultDialog = true;
+        _guessedArtistAndSong = false;
         CurrentItem = null;
         _answerGiven = true;
+        _activePlacementKey = null;
+        
+        // Clear challenge state after showing dialog
         _challengeMode = false;
         _challengingPlayer = null;
         _challengedPlayer = null;
         _selectedChallengePositionKey = null;
+        _originalPlacementPrev = null;
+        _originalPlacementNext = null;
+        
         StateHasChanged();
     }
 
@@ -971,7 +1362,6 @@
         {
             currentPlayer.AddCard(CurrentItem);
             currentPlayer.SortCards();
-            CheckAndAwardRyostoCard(currentPlayer);
         }
         else
         {
@@ -985,21 +1375,6 @@
         _answerGiven = true;
         _selectedDecade = null;
         StateHasChanged();
-    }
-
-    private void CheckAndAwardRyostoCard(Player<T> player)
-    {
-        if (!Game.UseRyostoCards) return;
-        
-        // Ansaitse ryöstokortti joka 5. oikea vastaus
-        int correctAnswers = player.Cards.Count;
-        
-        // Tarkista onko saavutettu uusi 5:n monikerta
-        if (correctAnswers % 5 == 0 && correctAnswers > 0)
-        {
-            player.RyostoCards++;
-            SnackBar.Add($"🎴 {player.Name} ansaitsi ryöstokortin! ({correctAnswers} oikeaa vastausta)", Severity.Success);
-        }
     }
 
     private Task DrawNext()
@@ -1016,13 +1391,32 @@
     {
         if (_activePlacementKey == placementKey)
         {
-            // Second click - make the guess
+            // Second click - tallenna alkuperäinen valinta ja vahvista
+            if (player == Game.CurrentPlayer && !_challengeMode)
+            {
+                _originalPlacementPrev = prev;
+                _originalPlacementNext = next;
+                
+                // Debug
+                Console.WriteLine($"[TogglePlacement CONFIRM] Tallennettiin alkuperäinen valinta pelaajalle {player.Name}:");
+                Console.WriteLine($"  prev: {(prev != null ? prev.value.ToString() : "null")}");
+                Console.WriteLine($"  next: {(next != null ? next.value.ToString() : "null")}");
+            }
+            
+            // Make the guess
             SetHere(player, prev, next);
         }
         else
         {
-            // First click - activate this placement
+            // First click - tallenna valinta (voi vaihtua ennen vahvistusta)
             _activePlacementKey = placementKey;
+            _activePlacementPrev = prev;
+            _activePlacementNext = next;
+            
+            Console.WriteLine($"[TogglePlacement SELECT] Valittiin paikka:");
+            Console.WriteLine($"  prev: {(prev != null ? prev.value.ToString() : "null")}");
+            Console.WriteLine($"  next: {(next != null ? next.value.ToString() : "null")}");
+            
             StateHasChanged();
         }
         return Task.CompletedTask;
@@ -1051,7 +1445,6 @@
         {
             player.AddCard(CurrentItem);
             player.SortCards();
-            CheckAndAwardRyostoCard(player);
         }
         else
         {
@@ -1150,6 +1543,83 @@
         StateHasChanged();
     }
     
+    private void CloseChallengeResultDialog()
+    {
+        // Tarkista oliko artisti & kappale arvaus oikein (alkuperäiselle pelaajalle)
+        if (_guessedArtistAndSong && _lastChallengedPlayer != null && Game.UseRyostoCards)
+        {
+            _lastChallengedPlayer.RyostoCards++;
+            SnackBar.Add($"🎤 {_lastChallengedPlayer.Name} arvasi myös artisti & kappaleen ja sai ryöstokortin!", Severity.Success);
+        }
+        
+        _showChallengeResultDialog = false;
+        _guessedArtistAndSong = false;
+        _isEditingValue = false;
+        StateHasChanged();
+    }
+    
+    private void SaveEditedChallengeValue()
+    {
+        try
+        {
+            if (_lastAnswerItem != null && _lastChallengerPlayer != null && _lastChallengedPlayer != null)
+            {
+                var newValue = (T)Convert.ChangeType(_editedValue, typeof(T));
+                if (newValue != null)
+                {
+                    _lastAnswerItem.value = newValue;
+                    _lastAnswerValue = _editedValue;
+                    _lastChallengerValue = _editedValue;
+                    _lastChallengedValue = _editedValue;
+                    
+                    // Recheck both answers
+                    var challengerNewResult = _lastChallengerPlayer.CheckOrderGuess(_lastAnswerItem, _lastChallengerPrev, _lastChallengerNext);
+                    var challengedNewResult = _lastChallengedPlayer.CheckOrderGuess(_lastAnswerItem, _lastChallengedPrev, _lastChallengedNext);
+                    
+                    // Remove card from previous winner
+                    if (_lastAnswerPlayer != null)
+                    {
+                        _lastAnswerPlayer.Cards.Remove(_lastAnswerItem);
+                        _lastAnswerPlayer.FailedCards.Remove(_lastAnswerItem);
+                    }
+                    
+                    // Update results
+                    _challengerWasCorrect = challengerNewResult;
+                    _challengedWasCorrect = challengedNewResult;
+                    
+                    // Determine new winner (alkuperäinen voittaa jos molemmat oikein)
+                    if (challengedNewResult)
+                    {
+                        _lastChallengedPlayer.AddCard(_lastAnswerItem);
+                        _lastChallengedPlayer.SortCards();
+                        _lastAnswerPlayer = _lastChallengedPlayer;
+                        _lastAnswerCorrect = true;
+                    }
+                    else if (challengerNewResult)
+                    {
+                        _lastChallengerPlayer.AddCard(_lastAnswerItem);
+                        _lastChallengerPlayer.SortCards();
+                        _lastAnswerPlayer = _lastChallengerPlayer;
+                        _lastAnswerCorrect = true;
+                    }
+                    else
+                    {
+                        _lastChallengedPlayer.AddFailedCard(_lastAnswerItem);
+                        _lastAnswerPlayer = _lastChallengedPlayer;
+                        _lastAnswerCorrect = false;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // If parsing fails, just cancel
+        }
+        
+        _isEditingValue = false;
+        StateHasChanged();
+    }
+    
     private void ShowFailedCardsHistory(Player<T> player)
     {
         _selectedPlayer = player;
@@ -1177,6 +1647,90 @@
     {
         _showWinnerDialog = false;
         StateHasChanged();
+    }
+    
+    // Pelinjohtajan työkalut
+    private void AdjustRyostoCards(Player<T> player, int amount)
+    {
+        player.RyostoCards = Math.Max(0, player.RyostoCards + amount);
+        var action = amount > 0 ? "lisätty" : "poistettu";
+        SnackBar.Add($"Ryöstokortti {action}: {player.Name} ({player.RyostoCards} kpl)", Severity.Info);
+        StateHasChanged();
+    }
+    
+    private void ShowAddManualCard(Player<T> player)
+    {
+        _manualCardPlayer = player;
+        _manualCardValue = "";
+        _showAddManualCardDialog = true;
+        StateHasChanged();
+    }
+    
+    private string FormatPlacementRange(QuizItem<T>? prev, QuizItem<T>? next)
+    {
+        if (prev == null && next == null)
+        {
+            return "(tyhjä aikajana)";
+        }
+        else if (prev == null && next != null)
+        {
+            return $"-{next.value}";
+        }
+        else if (prev != null && next == null)
+        {
+            return $"{prev.value}-";
+        }
+        else if (prev != null && next != null)
+        {
+            return $"{prev.value}-{next.value}";
+        }
+        return "";
+    }
+    
+    private void CancelAddManualCard()
+    {
+        _showAddManualCardDialog = false;
+        _manualCardPlayer = null;
+        _manualCardValue = "";
+        StateHasChanged();
+    }
+    
+    private void ConfirmAddManualCard()
+    {
+        if (_manualCardPlayer == null || string.IsNullOrWhiteSpace(_manualCardValue))
+        {
+            SnackBar.Add("Syötä vuosiluku!", Severity.Warning);
+            return;
+        }
+        
+        try
+        {
+            // Parse value as type T
+            var parsedValue = (T)Convert.ChangeType(_manualCardValue, typeof(T));
+            
+            // Create manual card
+            var manualCard = new QuizItem<T>
+            {
+                id = Guid.NewGuid().ToString(),
+                text = $"Manuaalinen kortti ({_manualCardValue})",
+                value = parsedValue,
+                Uri = null
+            };
+            
+            _manualCardPlayer.AddCard(manualCard);
+            _manualCardPlayer.SortCards();
+            
+            SnackBar.Add($"Kortti lisätty: {_manualCardPlayer.Name} ({_manualCardValue})", Severity.Success);
+            
+            _showAddManualCardDialog = false;
+            _manualCardPlayer = null;
+            _manualCardValue = "";
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            SnackBar.Add($"Virhe arvon käsittelyssä: {ex.Message}", Severity.Error);
+        }
     }
 
     private async Task NextPlayerTurn()
