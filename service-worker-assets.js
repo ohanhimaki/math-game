@@ -13,8 +13,8 @@
       "url": "_framework\/CsvHelper.4zhysgmj1f.wasm.br"
     },
     {
-      "hash": "sha256-iP8GSxufnXnc1kRhK3Lziy07nqytqJwdLYogVPQiNWw=",
-      "url": "_framework\/MathGame.Web.zz9u62atvs.wasm.br"
+      "hash": "sha256-Dn5vBsNZzqyYg\/jTM9xXw1Pa2EhPnT2SzTcYc\/3XGs4=",
+      "url": "_framework\/MathGame.Web.k4no0aoqre.wasm.br"
     },
     {
       "hash": "sha256-SqHrN9tUVB0l\/BrSNtGv8jJ1nWHJxly3pzd95RjggtI=",
@@ -93,8 +93,8 @@
       "url": "_framework\/Microsoft.JSInterop.WebAssembly.heoad7mujs.wasm.br"
     },
     {
-      "hash": "sha256-t1Gtg8JxHo5qHpiI8\/n1SMjYrk5Bnlch+E4lUKgP2Ko=",
-      "url": "_framework\/MudBlazor.gdopqpotpf.wasm.br"
+      "hash": "sha256-uqCisTWkTBKrdGufO2ReBxPr8j9LJvYjceH+SAZkqbc=",
+      "url": "_framework\/MudBlazor.8j7hkekvuh.wasm.br"
     },
     {
       "hash": "sha256-Ih1lLWkp5fYhMUgxAwpRLEHzIrYtYIVkFtH1c0f3Dd4=",
@@ -209,8 +209,8 @@
       "url": "_framework\/System.Runtime.Serialization.Formatters.1p96fuurrj.wasm.br"
     },
     {
-      "hash": "sha256-ps4WPp0kiJF\/LMyWS0qp46u56O2\/AeonCCUtLt\/rVFQ=",
-      "url": "_framework\/System.Runtime.btymll64va.wasm.br"
+      "hash": "sha256-V7qCkxt3USaUEPuz2\/m5Ic2wgXql5ZK+jEejXqgrcoQ=",
+      "url": "_framework\/System.Runtime.u5bc97pmfp.wasm.br"
     },
     {
       "hash": "sha256-HGuK642l4FBFhBcNNyTjzTUh73IdFxAUZtLuo8F2evI=",
@@ -237,7 +237,7 @@
       "url": "_framework\/System.t4d4s3f398.wasm.br"
     },
     {
-      "hash": "sha256-1mGRGUr7jDyrV3NVWyHC0JOtu5MUZE99OOIgO2jqu4U=",
+      "hash": "sha256-LskB8i57kA7CJbTfjDjdQfZXJmWdBXXGbKUMaKempg4=",
       "url": "_framework\/blazor.boot.json.br"
     },
     {
@@ -293,7 +293,7 @@
       "url": "js\/download.js.br"
     },
     {
-      "hash": "sha256-0LPYfgiVXUnthO7qm5vTyEAN6zVz+judKRYSCH4+PjU=",
+      "hash": "sha256-dVDxmbdt63YxOrdinvJh2AAKNJKW1TL03BmH0GEw5+0=",
       "url": "js\/keyboard.js.br"
     },
     {
@@ -337,5 +337,5 @@
       "url": "brotliloader.min.js"
     }
   ],
-  "version": "LLWYoPqV"
+  "version": "H6D2bdko"
 };
