@@ -15,7 +15,7 @@ public class GateGenerator
             {
                 OptionA = RandomOperation(),
                 OptionB = RandomOperation(),
-                YPosition = -20.0 - i * 30.0  // staggered start above viewport
+                YPosition = -20.0 - i * 30.0
             });
         }
         return gates;
@@ -25,14 +25,25 @@ public class GateGenerator
 
     private Operation RandomOperation()
     {
-        var type = (OperationType)_random.Next(0, 4);
-        return type switch
+        return _random.Next(0, 5) switch
         {
-            OperationType.Add => new Operation { Type = type, Value = _random.Next(10, 51) },
-            OperationType.Subtract => new Operation { Type = type, Value = _random.Next(10, 31) },
-            OperationType.Multiply => new Operation { Type = type, Value = _random.Next(15, 21) / 10.0 },
-            OperationType.Divide => new Operation { Type = type, Value = 2 },
-            _ => throw new InvalidOperationException()
+            0 => Add(),
+            1 => Subtract(),
+            2 => new Operation { Formula = "x*1.5", Label = "×1.5" },
+            3 => new Operation { Formula = "x*2",   Label = "×2" },
+            _ => new Operation { Formula = "x/2",   Label = "÷2" },
         };
+    }
+
+    private Operation Add()
+    {
+        var n = _random.Next(10, 51);
+        return new Operation { Formula = $"x+{n}", Label = $"+{n}" };
+    }
+
+    private Operation Subtract()
+    {
+        var n = _random.Next(10, 31);
+        return new Operation { Formula = $"x-{n}", Label = $"-{n}" };
     }
 }

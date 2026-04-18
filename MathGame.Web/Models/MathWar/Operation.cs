@@ -1,25 +1,20 @@
+using NCalc;
+
 namespace MathGame.Web.Models.MathWar;
 
 public class Operation
 {
-    public OperationType Type { get; set; }
-    public double Value { get; set; }
+    /// <summary>NCalc formula using 'x' as the variable, e.g. "x*2+100"</summary>
+    public string Formula { get; set; } = "x";
 
-    public string Label => Type switch
-    {
-        OperationType.Add => $"+{(int)Value}",
-        OperationType.Subtract => $"-{(int)Value}",
-        OperationType.Multiply => Value == 1.5 ? "×1.5" : $"×{(int)Value}",
-        OperationType.Divide => $"÷{(int)Value}",
-        _ => "?"
-    };
+    /// <summary>Human-readable label. x-first formulas omit the leading x (e.g. "+30", "×2"). 
+    /// Formulas where x is not first show x explicitly (e.g. "100×x").</summary>
+    public string Label { get; set; } = "?";
 
-    public int Apply(int input) => Type switch
+    public int Apply(int input)
     {
-        OperationType.Add => input + (int)Value,
-        OperationType.Subtract => input - (int)Value,
-        OperationType.Multiply => (int)(input * Value),
-        OperationType.Divide => (int)(input / Value),
-        _ => input
-    };
+        var expr = new Expression(Formula);
+        expr.Parameters["x"] = (double)input;
+        return Convert.ToInt32(expr.Evaluate());
+    }
 }
