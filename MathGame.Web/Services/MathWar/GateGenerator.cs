@@ -13,8 +13,7 @@ public class GateGenerator
         {
             gates.Add(new Gate
             {
-                OptionA = RandomOperation(),
-                OptionB = RandomOperation(),
+                Segments = GenerateSegments(),
                 YPosition = -20.0 - i * 30.0
             });
         }
@@ -22,6 +21,32 @@ public class GateGenerator
     }
 
     public int GateCount() => _random.Next(5, 8);
+
+    private List<GateSegment> GenerateSegments()
+    {
+        // 2–4 segments, randomly partition 6 lanes
+        int segCount = _random.Next(2, 5);
+
+        var splitPoints = new SortedSet<int>();
+        while (splitPoints.Count < segCount - 1)
+            splitPoints.Add(_random.Next(1, 6)); // valid split points: 1–5
+
+        var boundaries = new List<int> { 0 };
+        boundaries.AddRange(splitPoints);
+        boundaries.Add(6);
+
+        var segments = new List<GateSegment>();
+        for (int i = 0; i < boundaries.Count - 1; i++)
+        {
+            segments.Add(new GateSegment
+            {
+                StartLane = boundaries[i],
+                EndLane = boundaries[i + 1] - 1,
+                Operation = RandomOperation()
+            });
+        }
+        return segments;
+    }
 
     private Operation RandomOperation()
     {

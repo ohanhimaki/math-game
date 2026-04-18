@@ -63,22 +63,11 @@
             @* Game field *@
             <div style="position:relative; height:500px; background:#111; border-radius:8px; overflow:hidden; border:2px solid #333;">
 
-                @* Lane divider *@
-                <div style="position:absolute; left:50%; top:0; bottom:0; width:3px; background:#c41e3a; opacity:0.6; z-index:1;"></div>
-
-                @* OptionA / OptionB labels at top *@
-                <div style="position:absolute; top:8px; left:0; width:50%; text-align:center; z-index:2;">
-                    <MudChip T="string" Color="Color.Info" Size="Size.Small">A</MudChip>
-                </div>
-                <div style="position:absolute; top:8px; left:50%; width:50%; text-align:center; z-index:2;">
-                    <MudChip T="string" Color="Color.Warning" Size="Size.Small">B</MudChip>
-                </div>
-
                 @* Lane lines *@
                 @for (int l = 1; l < 6; l++)
                 {
                     var pct = l * (100.0 / 6.0);
-                    <div style="position:absolute; left:@(pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%; top:0; bottom:0; width:1px; background:rgba(255,255,255,0.08); z-index:1;"></div>
+                    <div style="position:absolute; left:@(pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%; top:0; bottom:0; width:1px; background:rgba(255,255,255,0.12); z-index:1;"></div>
                 }
 
                 @* Gates *@
@@ -86,14 +75,19 @@
                 {
                     var yStr = gate.YPosition.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
                     <div style="position:absolute; top:@(yStr)%; left:0; right:0; z-index:3; display:flex; height:60px;">
-                        @* OptionA – left half *@
-                        <div style="width:50%; display:flex; align-items:center; justify-content:center; background:rgba(30,100,200,0.25); border:1px solid rgba(60,130,230,0.6); border-radius:4px 0 0 4px;">
-                            <MudText Typo="Typo.h5" Style="color:#fff; font-weight:bold;">@gate.OptionA.Label</MudText>
-                        </div>
-                        @* OptionB – right half *@
-                        <div style="width:50%; display:flex; align-items:center; justify-content:center; background:rgba(180,120,20,0.25); border:1px solid rgba(210,150,30,0.6); border-radius:0 4px 4px 0;">
-                            <MudText Typo="Typo.h5" Style="color:#fff; font-weight:bold;">@gate.OptionB.Label</MudText>
-                        </div>
+                        @for (int si = 0; si < gate.Segments.Count; si++)
+                        {
+                            var seg = gate.Segments[si];
+                            var segWidth = (seg.EndLane - seg.StartLane + 1) * _lanePct;
+                            var isEven = si % 2 == 0;
+                            var bg   = isEven ? "rgba(30,100,200,0.3)"  : "rgba(180,120,20,0.3)";
+                            var bdr  = isEven ? "rgba(60,130,230,0.7)"  : "rgba(210,150,30,0.7)";
+                            var radiusL = si == 0 ? "4px" : "0";
+                            var radiusR = si == gate.Segments.Count - 1 ? "4px" : "0";
+                            <div style="width:@(segWidth.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%; display:flex; align-items:center; justify-content:center; background:@bg; border:1px solid @bdr; border-radius:@radiusL @radiusR @radiusR @radiusL;">
+                                <MudText Typo="Typo.h5" Style="color:#fff; font-weight:bold;">@seg.Operation.Label</MudText>
+                            </div>
+                        }
                     </div>
                 }
 
@@ -107,7 +101,7 @@
             </div>
 
             <MudText Typo="Typo.caption" Align="Align.Center" Class="mt-2" Color="Color.Secondary">
-                ← → liiku | A = vasen puoli | B = oikea puoli
+                ← → liiku sarakkeesta toiseen
             </MudText>
         </div>
     }
@@ -186,9 +180,9 @@
         foreach (var gate in _state.Gates.Where(g => !g.Applied && g.YPosition >= _playerRowPct))
         {
             gate.Applied = true;
-            bool choseA = _state.PlayerLane < 3;
-            var op = choseA ? gate.OptionA : gate.OptionB;
-            _state.CurrentValue = op.Apply(_state.CurrentValue);
+            var seg = gate.Segments.FirstOrDefault(s => s.StartLane <= _state.PlayerLane && _state.PlayerLane <= s.EndLane);
+            if (seg != null)
+                _state.CurrentValue = seg.Operation.Apply(_state.CurrentValue);
             _state.GatesCompleted++;
         }
     }

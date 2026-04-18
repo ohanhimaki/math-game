@@ -14,14 +14,15 @@ public class ScoreCalculator
         if (index >= gates.Count)
             return (value, value);
 
-        var gate = gates[index];
-        var a = gate.OptionA.Apply(value);
-        var b = gate.OptionB.Apply(value);
-
-        var (minA, maxA) = Recurse(a, index + 1, gates);
-        var (minB, maxB) = Recurse(b, index + 1, gates);
-
-        return (Math.Min(minA, minB), Math.Max(maxA, maxB));
+        int min = int.MaxValue, max = int.MinValue;
+        foreach (var seg in gates[index].Segments)
+        {
+            var next = seg.Operation.Apply(value);
+            var (segMin, segMax) = Recurse(next, index + 1, gates);
+            min = Math.Min(min, segMin);
+            max = Math.Max(max, segMax);
+        }
+        return (min, max);
     }
 
     public string GetRating(int finalValue, int min, int max)
