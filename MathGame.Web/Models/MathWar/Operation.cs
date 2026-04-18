@@ -15,6 +15,7 @@ public class Operation
     {
         var expr = new Expression(Formula);
         expr.Parameters["x"] = (double)input;
-        return Convert.ToInt32(expr.Evaluate());
+        var result = Convert.ToDouble(expr.Evaluate());
+        return (int)Math.Clamp(result, -1_000_000_000.0, 1_000_000_000.0);
     }
 }

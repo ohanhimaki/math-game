@@ -9,6 +9,11 @@ public class ScoreCalculator
         return Recurse(startValue, 0, gates);
     }
 
+    public int SimulateMax(int startValue, List<Gate> gates)
+    {
+        return SimulateMinMax(startValue, gates).Max;
+    }
+
     private (int Min, int Max) Recurse(int value, int index, List<Gate> gates)
     {
         if (index >= gates.Count)

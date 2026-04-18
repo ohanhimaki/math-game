@@ -18,40 +18,54 @@
             </MudText>
             @if (_highScore > 0)
             {
-                <MudText Typo="Typo.body2" Class="mb-4">🏆 Ennätys: <b>@_highScore</b> (@_bestRating)</MudText>
+                <MudText Typo="Typo.body2" Class="mb-4">🏆 Ennätys: kenttä <b>@_bestLevel</b>, arvo <b>@_highScore</b> (@_bestRating)</MudText>
             }
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="StartGame">Aloita peli</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="StartNewGame">Aloita peli</MudButton>
+        </MudPaper>
+    }
+    else if (_levelComplete)
+    {
+        <MudPaper Class="pa-8 text-center" Elevation="4">
+            <MudText Typo="Typo.h5" Color="Color.Secondary" Class="mb-1">Kenttä @_level</MudText>
+            <MudText Typo="Typo.h3" Class="mb-2">✅ Läpäisty!</MudText>
+            <MudText Typo="Typo.h2" Color="Color.Primary" Class="mb-2">@_state.CurrentValue</MudText>
+            <MudText Typo="Typo.h6" Class="mb-4">
+                @(_levelRating switch {
+                    "Gold"   => "🥇 Kulta",
+                    "Silver" => "🥈 Hopea",
+                    "Bronze" => "🥉 Pronssi",
+                    _        => ""
+                })
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
+                Seuraava kenttä: @(_level + 1) &nbsp;·&nbsp; Vaikeutuu!
+            </MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="AdvanceLevel">Jatka →</MudButton>
         </MudPaper>
     }
     else if (_state.IsGameOver)
     {
         <MudPaper Class="pa-8 text-center" Elevation="4">
             <MudText Typo="Typo.h4" Class="mb-2">Peli ohi!</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-1">Kenttä @_level</MudText>
             <MudText Typo="Typo.h2" Color="Color.Primary" Class="mb-2">@_state.CurrentValue</MudText>
-            <MudText Typo="Typo.h5" Class="mb-4">
-                @(_state.Rating switch {
-                    "Gold"   => "🥇 Kulta",
-                    "Silver" => "🥈 Hopea",
-                    "Bronze" => "🥉 Pronssi",
-                    _        => "Ei mitalia"
-                })
-            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Bronze vaati @_bronzeThreshold &nbsp;·&nbsp; et yltänyt mitaleille</MudText>
             @{
                 var (bv, sv, gv) = ScoreCalculator.GetThresholds(_minPossible, _maxPossible);
             }
             <MudStack Row="true" Justify="Justify.Center" Spacing="3" Class="mb-4">
-                <MudChip T="string" Color="@(_state.CurrentValue >= gv ? Color.Warning : Color.Default)" Icon="@Icons.Material.Filled.EmojiEvents">🥇 @gv</MudChip>
-                <MudChip T="string" Color="@(_state.CurrentValue >= sv ? Color.Default   : Color.Default)" Style="@(_state.CurrentValue >= sv ? "background:rgba(160,160,175,0.4)" : "")">🥈 @sv</MudChip>
-                <MudChip T="string" Color="@(_state.CurrentValue >= bv ? Color.Default   : Color.Default)" Style="@(_state.CurrentValue >= bv ? "background:rgba(176,141,87,0.4)" : "")">🥉 @bv</MudChip>
+                <MudChip T="string" Color="@(_state.CurrentValue >= gv ? Color.Warning : Color.Default)">🥇 @gv</MudChip>
+                <MudChip T="string" Style="@(_state.CurrentValue >= sv ? "background:rgba(160,160,175,0.4)" : "")">🥈 @sv</MudChip>
+                <MudChip T="string" Style="@(_state.CurrentValue >= bv ? "background:rgba(176,141,87,0.4)" : "")">🥉 @bv</MudChip>
             </MudStack>
             <MudText Typo="Typo.body2" Class="mb-2" Color="Color.Secondary">
-                Paras mahdollinen: @_maxPossible &nbsp;|&nbsp; Huonoin: @_minPossible
+                Ideaali: @_maxPossible &nbsp;|&nbsp; Huonoin: @_minPossible
             </MudText>
             @if (_isNewHighScore)
             {
-                <MudAlert Severity="Severity.Success" Class="mb-4">🎉 Uusi ennätys!</MudAlert>
+                <MudAlert Severity="Severity.Success" Class="mb-4">🎉 Uusi ennätys! Kenttä @_level, arvo @_highScore</MudAlert>
             }
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartGame">Pelaa uudelleen</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartNewGame">Pelaa uudelleen</MudButton>
             <MudButton Variant="Variant.Outlined" Color="Color.Default" Class="ml-2" OnClick="GoToMenu">Valikko</MudButton>
         </MudPaper>
     }
@@ -61,12 +75,11 @@
              style="outline:none; user-select:none;">
 
             @* Current value *@
-            <MudText Typo="Typo.h3" Align="Align.Center" Class="mb-2" Color="Color.Primary">
-                @_state.CurrentValue
-            </MudText>
-            <MudText Typo="Typo.body2" Align="Align.Center" Class="mb-3" Color="Color.Secondary">
-                Portti @(_state.GatesCompleted + 1) / @_state.Gates.Count
-            </MudText>
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+                <MudText Typo="Typo.h6" Color="Color.Secondary">Kenttä @_level</MudText>
+                <MudText Typo="Typo.h3" Color="Color.Primary">@_state.CurrentValue</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@(_state.GatesCompleted)/@_operationalGateCount</MudText>
+            </MudStack>
 
             @* Game field *@
             <div style="position:relative; height:500px; background:#111; border-radius:8px; overflow:hidden; border:2px solid #333;">
@@ -130,18 +143,27 @@
 @code {
     private GameState _state = new();
     private bool _started;
+    private bool _levelComplete;
     private bool _isNewHighScore;
     private int _minPossible;
     private int _maxPossible;
     private int _highScore;
+    private int _bestLevel;
     private string _bestRating = "";
+    private string _levelRating = "";
+    private int _bronzeThreshold;
+    private int _operationalGateCount;
+
+    // Multi-level state
+    private int _level = 1;
+    private int _idealStartValue = 100;
 
     private ElementReference _gameDiv;
     private CancellationTokenSource? _cts;
 
     private const double _lanePct = 100.0 / 6.0;
-    private const double _playerRowPct = 80.0; // player "hit" Y%
-    private const double _scrollSpeed = 0.4;   // % per tick
+    private const double _playerRowPct = 80.0;
+    private const double _scrollSpeed = 0.4;
 
     private double _playerLeftPct => _state.PlayerLane * _lanePct;
 
@@ -150,15 +172,27 @@
         await LoadHighScore();
     }
 
-    private async Task StartGame()
+    private Task StartNewGame()
+    {
+        _level = 1;
+        _idealStartValue = 100;
+        return StartLevel(100);
+    }
+
+    private async Task StartLevel(int actualStartValue)
     {
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
         _isNewHighScore = false;
+        _levelComplete = false;
 
-        var operationalGates = GateGenerator.Generate(GateGenerator.GateCount());
-        (_minPossible, _maxPossible) = ScoreCalculator.SimulateMinMax(100, operationalGates);
+        var operationalGates = GateGenerator.Generate(GateGenerator.GateCount(_level), _level);
+        _operationalGateCount = operationalGates.Count;
+
+        // Thresholds always based on ideal start (what max player could have entered with)
+        (_minPossible, _maxPossible) = ScoreCalculator.SimulateMinMax(_idealStartValue, operationalGates);
         var (bronzeVal, silverVal, goldVal) = ScoreCalculator.GetThresholds(_minPossible, _maxPossible);
+        _bronzeThreshold = bronzeVal;
 
         var lastY = -20.0 - (operationalGates.Count - 1) * 30.0;
         var thresholdGates = new List<Gate>
@@ -170,7 +204,7 @@
 
         _state = new GameState
         {
-            CurrentValue = 100,
+            CurrentValue = actualStartValue,
             PlayerLane = 2,
             Gates = operationalGates.Concat(thresholdGates).ToList()
         };
@@ -182,6 +216,17 @@
         await _gameDiv.FocusAsync();
 
         _ = RunGameLoop(_cts.Token);
+    }
+
+    private async Task AdvanceLevel()
+    {
+        // Next level's ideal start = max possible outcome of this level from the ideal start
+        // Cap to prevent exponential explosion in simulation
+        _idealStartValue = Math.Min(
+            ScoreCalculator.SimulateMax(_idealStartValue, _state.Gates.Where(g => !g.IsThreshold).ToList()),
+            10_000_000);
+        _level++;
+        await StartLevel(_state.CurrentValue);
     }
 
     private static Gate ThresholdGate(string emoji, int value, string bg, string border, double y) => new Gate
@@ -201,9 +246,9 @@
     {
         try
         {
-            while (!ct.IsCancellationRequested && !_state.IsGameOver)
+            while (!ct.IsCancellationRequested && !_state.IsGameOver && !_levelComplete)
             {
-                await Task.Delay(33, ct); // ~30fps
+                await Task.Delay(33, ct);
 
                 foreach (var gate in _state.Gates.Where(g => !g.Applied))
                     gate.YPosition += _scrollSpeed;
@@ -211,7 +256,7 @@
                 CheckCollisions();
 
                 if (_state.Gates.All(g => g.Applied))
-                    await EndGame();
+                    await EndLevel();
 
                 await InvokeAsync(StateHasChanged);
             }
@@ -234,16 +279,33 @@
         }
     }
 
-    private async Task EndGame()
+    private async Task EndLevel()
     {
         _cts?.Cancel();
-        _state.IsGameOver = true;
-        _state.Rating = ScoreCalculator.GetRating(_state.CurrentValue, _minPossible, _maxPossible);
+        _levelRating = ScoreCalculator.GetRating(_state.CurrentValue, _minPossible, _maxPossible);
 
-        if (_state.CurrentValue > _highScore)
+        if (_state.CurrentValue >= _bronzeThreshold)
+        {
+            // Passed this level
+            await CheckHighScore();
+            _levelComplete = true;
+        }
+        else
+        {
+            // Failed to reach bronze → game over
+            _state.IsGameOver = true;
+            _state.Rating = _levelRating;
+            await CheckHighScore();
+        }
+    }
+
+    private async Task CheckHighScore()
+    {
+        if (_state.CurrentValue > _highScore || (_state.CurrentValue == _highScore && _level > _bestLevel))
         {
             _highScore = _state.CurrentValue;
-            _bestRating = _state.Rating;
+            _bestRating = _levelRating;
+            _bestLevel = _level;
             _isNewHighScore = true;
             await SaveHighScore();
         }
@@ -251,7 +313,7 @@
 
     private void HandleKey(KeyboardEventArgs e)
     {
-        if (_state.IsGameOver) return;
+        if (_state.IsGameOver || _levelComplete) return;
         if (e.Key == "ArrowLeft" && _state.PlayerLane > 0)
             _state.PlayerLane--;
         else if (e.Key == "ArrowRight" && _state.PlayerLane < 5)
@@ -261,6 +323,7 @@
     private void GoToMenu()
     {
         _started = false;
+        _levelComplete = false;
         _cts?.Cancel();
     }
 
@@ -273,6 +336,7 @@
             {
                 _highScore = data.HighScore;
                 _bestRating = data.BestRating;
+                _bestLevel = data.BestLevel;
             }
         }
         catch { }
@@ -285,7 +349,8 @@
             await JSRuntime.InvokeVoidAsync("mathWarSaveSave", new SaveData
             {
                 HighScore = _highScore,
-                BestRating = _bestRating
+                BestRating = _bestRating,
+                BestLevel = _bestLevel
             });
         }
         catch { }

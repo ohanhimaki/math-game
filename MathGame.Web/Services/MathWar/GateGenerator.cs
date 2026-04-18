@@ -6,30 +6,31 @@ public class GateGenerator
 {
     private readonly Random _random = new();
 
-    public List<Gate> Generate(int count)
+    public List<Gate> Generate(int count, int level = 1)
     {
         var gates = new List<Gate>();
         for (int i = 0; i < count; i++)
         {
             gates.Add(new Gate
             {
-                Segments = GenerateSegments(),
+                Segments = GenerateSegments(level),
                 YPosition = -20.0 - i * 30.0
             });
         }
         return gates;
     }
 
-    public int GateCount() => _random.Next(5, 8);
+    public int GateCount(int level = 1) => Math.Min(5 + (level - 1), 10);
 
-    private List<GateSegment> GenerateSegments()
+    private List<GateSegment> GenerateSegments(int level)
     {
-        // 2–4 segments, randomly partition 6 lanes
-        int segCount = _random.Next(2, 5);
+        // Higher levels allow more segments
+        int maxSegments = Math.Min(2 + (level / 2), 5);
+        int segCount = _random.Next(2, maxSegments + 1);
 
         var splitPoints = new SortedSet<int>();
         while (splitPoints.Count < segCount - 1)
-            splitPoints.Add(_random.Next(1, 6)); // valid split points: 1–5
+            splitPoints.Add(_random.Next(1, 6));
 
         var boundaries = new List<int> { 0 };
         boundaries.AddRange(splitPoints);
@@ -42,33 +43,46 @@ public class GateGenerator
             {
                 StartLane = boundaries[i],
                 EndLane = boundaries[i + 1] - 1,
-                Operation = RandomOperation()
+                Operation = RandomOperation(level)
             });
         }
         return segments;
     }
 
-    private Operation RandomOperation()
+    private Operation RandomOperation(int level)
     {
-        return _random.Next(0, 5) switch
-        {
-            0 => Add(),
-            1 => Subtract(),
-            2 => new Operation { Formula = "x*1.5", Label = "×1.5" },
-            3 => new Operation { Formula = "x*2",   Label = "×2" },
-            _ => new Operation { Formula = "x/2",   Label = "÷2" },
-        };
+        // Higher levels: heavier multiply weight, larger numbers
+        int multiplyWeight = Math.Min(1 + level / 2, 3);
+        int total = 2 + multiplyWeight + 1; // add, subtract, multiply×weight, divide
+
+        int roll = _random.Next(0, total);
+        if (roll == 0) return Add(level);
+        if (roll == 1) return Subtract(level);
+        if (roll < 2 + multiplyWeight) return Multiply(level);
+        return new Operation { Formula = "x/2", Label = "÷2" };
     }
 
-    private Operation Add()
+    private Operation Add(int level)
     {
-        var n = _random.Next(10, 51);
+        int max = Math.Min(10 + level * 15, 100);
+        var n = _random.Next(10, max + 1);
         return new Operation { Formula = $"x+{n}", Label = $"+{n}" };
     }
 
-    private Operation Subtract()
+    private Operation Subtract(int level)
     {
-        var n = _random.Next(10, 31);
+        int max = Math.Min(10 + level * 10, 60);
+        var n = _random.Next(10, max + 1);
         return new Operation { Formula = $"x-{n}", Label = $"-{n}" };
+    }
+
+    private Operation Multiply(int level)
+    {
+        // Level 1-2: ×1.5/×2; level 3+: also ×3; level 5+: also ×4
+        var options = new List<(string f, string l)> { ("x*1.5", "×1.5"), ("x*2", "×2") };
+        if (level >= 3) options.Add(("x*3", "×3"));
+        if (level >= 5) options.Add(("x*4", "×4"));
+        var (f, l) = options[_random.Next(options.Count)];
+        return new Operation { Formula = f, Label = l };
     }
 }
