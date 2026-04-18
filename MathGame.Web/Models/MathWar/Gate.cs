@@ -13,4 +13,10 @@ public class Gate
     /// <summary>Y position as percentage (0=top, 100=bottom)</summary>
     public double YPosition { get; set; }
     public bool Applied { get; set; }
+
+    // Trophy/threshold gate fields (IsThreshold=true → no operation applied)
+    public bool IsThreshold { get; set; }
+    public string? ThresholdEmoji { get; set; }
+    public int ThresholdValue { get; set; }
+    public string? ThresholdColor { get; set; }
 }

@@ -28,12 +28,20 @@ public class ScoreCalculator
     public string GetRating(int finalValue, int min, int max)
     {
         if (max == min) return "Gold";
-        double bronze = min + 0.4 * (max - min);
-        double silver = min + 0.7 * (max - min);
-        double gold   = min + 0.9 * (max - min);
+        var (bronze, silver, gold) = GetThresholds(min, max);
         if (finalValue >= gold)   return "Gold";
         if (finalValue >= silver) return "Silver";
         if (finalValue >= bronze) return "Bronze";
         return "–";
+    }
+
+    public (int Bronze, int Silver, int Gold) GetThresholds(int min, int max)
+    {
+        if (max == min) return (min, min, min);
+        return (
+            (int)(min + 0.5  * (max - min)),
+            (int)(min + 0.75 * (max - min)),
+            (int)(min + 0.9  * (max - min))
+        );
     }
 }

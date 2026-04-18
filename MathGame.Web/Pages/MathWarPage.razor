@@ -33,9 +33,17 @@
                     "Gold"   => "🥇 Kulta",
                     "Silver" => "🥈 Hopea",
                     "Bronze" => "🥉 Pronssi",
-                    _        => "Yritä uudelleen"
+                    _        => "Ei mitalia"
                 })
             </MudText>
+            @{
+                var (bv, sv, gv) = ScoreCalculator.GetThresholds(_minPossible, _maxPossible);
+            }
+            <MudStack Row="true" Justify="Justify.Center" Spacing="3" Class="mb-4">
+                <MudChip T="string" Color="@(_state.CurrentValue >= gv ? Color.Warning : Color.Default)" Icon="@Icons.Material.Filled.EmojiEvents">🥇 @gv</MudChip>
+                <MudChip T="string" Color="@(_state.CurrentValue >= sv ? Color.Default   : Color.Default)" Style="@(_state.CurrentValue >= sv ? "background:rgba(160,160,175,0.4)" : "")">🥈 @sv</MudChip>
+                <MudChip T="string" Color="@(_state.CurrentValue >= bv ? Color.Default   : Color.Default)" Style="@(_state.CurrentValue >= bv ? "background:rgba(176,141,87,0.4)" : "")">🥉 @bv</MudChip>
+            </MudStack>
             <MudText Typo="Typo.body2" Class="mb-2" Color="Color.Secondary">
                 Paras mahdollinen: @_maxPossible &nbsp;|&nbsp; Huonoin: @_minPossible
             </MudText>
@@ -74,21 +82,33 @@
                 @foreach (var gate in _state.Gates.Where(g => !g.Applied))
                 {
                     var yStr = gate.YPosition.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
-                    <div style="position:absolute; top:@(yStr)%; left:0; right:0; z-index:3; display:flex; height:60px;">
-                        @for (int si = 0; si < gate.Segments.Count; si++)
-                        {
-                            var seg = gate.Segments[si];
-                            var segWidth = (seg.EndLane - seg.StartLane + 1) * _lanePct;
-                            var isEven = si % 2 == 0;
-                            var bg   = isEven ? "rgba(30,100,200,0.3)"  : "rgba(180,120,20,0.3)";
-                            var bdr  = isEven ? "rgba(60,130,230,0.7)"  : "rgba(210,150,30,0.7)";
-                            var radiusL = si == 0 ? "4px" : "0";
-                            var radiusR = si == gate.Segments.Count - 1 ? "4px" : "0";
-                            <div style="width:@(segWidth.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%; display:flex; align-items:center; justify-content:center; background:@bg; border:1px solid @bdr; border-radius:@radiusL @radiusR @radiusR @radiusL;">
-                                <MudText Typo="Typo.h5" Style="color:#fff; font-weight:bold;">@seg.Operation.Label</MudText>
-                            </div>
-                        }
-                    </div>
+                    if (gate.IsThreshold)
+                    {
+                        @* Threshold / trophy gate – full width *@
+                        var metColor = _state.CurrentValue >= gate.ThresholdValue ? "rgba(255,255,255,0.15)" : gate.ThresholdColor;
+                        <div style="position:absolute; top:@(yStr)%; left:0; right:0; z-index:3; height:54px; display:flex; align-items:center; justify-content:center; background:@metColor; border-top:2px solid @gate.ThresholdColor; border-bottom:2px solid @gate.ThresholdColor; gap:12px;">
+                            <span style="font-size:28px;">@gate.ThresholdEmoji</span>
+                            <MudText Typo="Typo.h5" Style="color:#fff; font-weight:bold;">@gate.ThresholdValue</MudText>
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="position:absolute; top:@(yStr)%; left:0; right:0; z-index:3; display:flex; height:60px;">
+                            @for (int si = 0; si < gate.Segments.Count; si++)
+                            {
+                                var seg = gate.Segments[si];
+                                var segWidth = (seg.EndLane - seg.StartLane + 1) * _lanePct;
+                                var isEven = si % 2 == 0;
+                                var bg   = isEven ? "rgba(30,100,200,0.3)"  : "rgba(180,120,20,0.3)";
+                                var bdr  = isEven ? "rgba(60,130,230,0.7)"  : "rgba(210,150,30,0.7)";
+                                var radiusL = si == 0 ? "4px" : "0";
+                                var radiusR = si == gate.Segments.Count - 1 ? "4px" : "0";
+                                <div style="width:@(segWidth.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%; display:flex; align-items:center; justify-content:center; background:@bg; border:1px solid @bdr; border-radius:@radiusL @radiusR @radiusR @radiusL;">
+                                    <MudText Typo="Typo.h5" Style="color:#fff; font-weight:bold;">@seg.Operation.Label</MudText>
+                                </div>
+                            }
+                        </div>
+                    }
                 }
 
                 @* Player *@
@@ -136,14 +156,25 @@
         _cts = new CancellationTokenSource();
         _isNewHighScore = false;
 
+        var operationalGates = GateGenerator.Generate(GateGenerator.GateCount());
+        (_minPossible, _maxPossible) = ScoreCalculator.SimulateMinMax(100, operationalGates);
+        var (bronzeVal, silverVal, goldVal) = ScoreCalculator.GetThresholds(_minPossible, _maxPossible);
+
+        var lastY = -20.0 - (operationalGates.Count - 1) * 30.0;
+        var thresholdGates = new List<Gate>
+        {
+            ThresholdGate("🥉", bronzeVal, "rgba(176,141,87,0.35)",  "rgba(205,170,100,0.9)",  lastY - 50),
+            ThresholdGate("🥈", silverVal, "rgba(160,160,175,0.35)", "rgba(190,190,210,0.9)",  lastY - 90),
+            ThresholdGate("🥇", goldVal,   "rgba(200,170,30,0.35)",  "rgba(230,200,50,0.9)",   lastY - 130),
+        };
+
         _state = new GameState
         {
             CurrentValue = 100,
             PlayerLane = 2,
-            Gates = GateGenerator.Generate(GateGenerator.GateCount())
+            Gates = operationalGates.Concat(thresholdGates).ToList()
         };
 
-        (_minPossible, _maxPossible) = ScoreCalculator.SimulateMinMax(_state.CurrentValue, _state.Gates);
         _started = true;
 
         await InvokeAsync(StateHasChanged);
@@ -152,6 +183,19 @@
 
         _ = RunGameLoop(_cts.Token);
     }
+
+    private static Gate ThresholdGate(string emoji, int value, string bg, string border, double y) => new Gate
+    {
+        IsThreshold = true,
+        ThresholdEmoji = emoji,
+        ThresholdValue = value,
+        ThresholdColor = bg,
+        YPosition = y,
+        Segments = new List<GateSegment>
+        {
+            new GateSegment { StartLane = 0, EndLane = 5, Operation = new Operation { Formula = "x", Label = "" } }
+        }
+    };
 
     private async Task RunGameLoop(CancellationToken ct)
     {
@@ -180,10 +224,13 @@
         foreach (var gate in _state.Gates.Where(g => !g.Applied && g.YPosition >= _playerRowPct))
         {
             gate.Applied = true;
-            var seg = gate.Segments.FirstOrDefault(s => s.StartLane <= _state.PlayerLane && _state.PlayerLane <= s.EndLane);
-            if (seg != null)
-                _state.CurrentValue = seg.Operation.Apply(_state.CurrentValue);
-            _state.GatesCompleted++;
+            if (!gate.IsThreshold)
+            {
+                var seg = gate.Segments.FirstOrDefault(s => s.StartLane <= _state.PlayerLane && _state.PlayerLane <= s.EndLane);
+                if (seg != null)
+                    _state.CurrentValue = seg.Operation.Apply(_state.CurrentValue);
+                _state.GatesCompleted++;
+            }
         }
     }
 
