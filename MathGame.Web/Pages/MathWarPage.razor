@@ -163,9 +163,9 @@
         var lastY = -20.0 - (operationalGates.Count - 1) * 30.0;
         var thresholdGates = new List<Gate>
         {
-            ThresholdGate("🥉", bronzeVal, "rgba(176,141,87,0.35)",  "rgba(205,170,100,0.9)",  lastY - 50),
-            ThresholdGate("🥈", silverVal, "rgba(160,160,175,0.35)", "rgba(190,190,210,0.9)",  lastY - 90),
-            ThresholdGate("🥇", goldVal,   "rgba(200,170,30,0.35)",  "rgba(230,200,50,0.9)",   lastY - 130),
+            ThresholdGate("🥉", bronzeVal, "rgba(176,141,87,0.35)",  "rgba(205,170,100,0.9)",  lastY - 30),
+            ThresholdGate("🥈", silverVal, "rgba(160,160,175,0.35)", "rgba(190,190,210,0.9)",  lastY - 50),
+            ThresholdGate("🥇", goldVal,   "rgba(200,170,30,0.35)",  "rgba(230,200,50,0.9)",   lastY - 70),
         };
 
         _state = new GameState
