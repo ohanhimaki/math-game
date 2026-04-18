@@ -5,6 +5,8 @@ using MudBlazor.Services;
 using MathGame.Web.Services;
 using MathGame.Web.Models.Quiz;
 
+using MathGame.Web.Services.MathWar;
+
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
@@ -17,6 +19,8 @@ builder.Services.AddScoped<QuizService>();
 builder.Services.AddScoped<SpotifyService>();
 builder.Services.AddScoped<CsvQuizParser>();
 builder.Services.AddScoped<QuizFactory>();
+builder.Services.AddScoped<GateGenerator>();
+builder.Services.AddScoped<ScoreCalculator>();
 Console.WriteLine($"AppBasePath: {appBasePath}");
 
 builder.Services.AddMudServices();

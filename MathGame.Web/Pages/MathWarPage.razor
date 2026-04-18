@@ -1,0 +1,258 @@
+@page "/math-war"
+@using MathGame.Web.Models.MathWar
+@using MathGame.Web.Services.MathWar
+@inject GateGenerator GateGenerator
+@inject ScoreCalculator ScoreCalculator
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<PageTitle>MathWar</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-4">
+    @if (!_started)
+    {
+        <MudPaper Class="pa-8 text-center" Elevation="4">
+            <MudText Typo="Typo.h4" Class="mb-2">⚔️ MathWar</MudText>
+            <MudText Typo="Typo.body1" Class="mb-4" Color="Color.Secondary">
+                Ohjaa armeijasi porttien läpi. Valitse operaatio siirtymällä oikealle tai vasemmalle sarakkeelle ennen porttiin osumista.
+            </MudText>
+            @if (_highScore > 0)
+            {
+                <MudText Typo="Typo.body2" Class="mb-4">🏆 Ennätys: <b>@_highScore</b> (@_bestRating)</MudText>
+            }
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="StartGame">Aloita peli</MudButton>
+        </MudPaper>
+    }
+    else if (_state.IsGameOver)
+    {
+        <MudPaper Class="pa-8 text-center" Elevation="4">
+            <MudText Typo="Typo.h4" Class="mb-2">Peli ohi!</MudText>
+            <MudText Typo="Typo.h2" Color="Color.Primary" Class="mb-2">@_state.CurrentValue</MudText>
+            <MudText Typo="Typo.h5" Class="mb-4">
+                @(_state.Rating switch {
+                    "Gold"   => "🥇 Kulta",
+                    "Silver" => "🥈 Hopea",
+                    "Bronze" => "🥉 Pronssi",
+                    _        => "Yritä uudelleen"
+                })
+            </MudText>
+            <MudText Typo="Typo.body2" Class="mb-2" Color="Color.Secondary">
+                Paras mahdollinen: @_maxPossible &nbsp;|&nbsp; Huonoin: @_minPossible
+            </MudText>
+            @if (_isNewHighScore)
+            {
+                <MudAlert Severity="Severity.Success" Class="mb-4">🎉 Uusi ennätys!</MudAlert>
+            }
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartGame">Pelaa uudelleen</MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Default" Class="ml-2" OnClick="GoToMenu">Valikko</MudButton>
+        </MudPaper>
+    }
+    else
+    {
+        <div @ref="_gameDiv" tabindex="0" @onkeydown="HandleKey" @onkeydown:preventDefault
+             style="outline:none; user-select:none;">
+
+            @* Current value *@
+            <MudText Typo="Typo.h3" Align="Align.Center" Class="mb-2" Color="Color.Primary">
+                @_state.CurrentValue
+            </MudText>
+            <MudText Typo="Typo.body2" Align="Align.Center" Class="mb-3" Color="Color.Secondary">
+                Portti @(_state.GatesCompleted + 1) / @_state.Gates.Count
+            </MudText>
+
+            @* Game field *@
+            <div style="position:relative; height:500px; background:#111; border-radius:8px; overflow:hidden; border:2px solid #333;">
+
+                @* Lane divider *@
+                <div style="position:absolute; left:50%; top:0; bottom:0; width:3px; background:#c41e3a; opacity:0.6; z-index:1;"></div>
+
+                @* OptionA / OptionB labels at top *@
+                <div style="position:absolute; top:8px; left:0; width:50%; text-align:center; z-index:2;">
+                    <MudChip T="string" Color="Color.Primary" Size="Size.Small">A</MudChip>
+                </div>
+                <div style="position:absolute; top:8px; left:50%; width:50%; text-align:center; z-index:2;">
+                    <MudChip T="string" Color="Color.Secondary" Size="Size.Small">B</MudChip>
+                </div>
+
+                @* Lane lines *@
+                @for (int l = 1; l < 6; l++)
+                {
+                    var pct = l * (100.0 / 6.0);
+                    <div style="position:absolute; left:@(pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%; top:0; bottom:0; width:1px; background:rgba(255,255,255,0.08); z-index:1;"></div>
+                }
+
+                @* Gates *@
+                @foreach (var gate in _state.Gates.Where(g => !g.Applied))
+                {
+                    var yStr = gate.YPosition.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+                    <div style="position:absolute; top:@(yStr)%; left:0; right:0; z-index:3; display:flex; height:60px;">
+                        @* OptionA – left half *@
+                        <div style="width:50%; display:flex; align-items:center; justify-content:center; background:rgba(196,30,58,0.25); border:1px solid rgba(196,30,58,0.6); border-radius:4px 0 0 4px;">
+                            <MudText Typo="Typo.h5" Style="color:#fff; font-weight:bold;">@gate.OptionA.Label</MudText>
+                        </div>
+                        @* OptionB – right half *@
+                        <div style="width:50%; display:flex; align-items:center; justify-content:center; background:rgba(13,64,32,0.35); border:1px solid rgba(22,91,51,0.7); border-radius:0 4px 4px 0;">
+                            <MudText Typo="Typo.h5" Style="color:#fff; font-weight:bold;">@gate.OptionB.Label</MudText>
+                        </div>
+                    </div>
+                }
+
+                @* Player *@
+                <div style="position:absolute; bottom:20px; left:@(_playerLeftPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%; width:@(_lanePct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%; display:flex; align-items:center; justify-content:center; z-index:5; transition:left 0.1s;">
+                    <div style="width:48px; height:48px; border-radius:50%; background:#c41e3a; display:flex; align-items:center; justify-content:center; font-size:24px; box-shadow:0 0 12px #c41e3a;">
+                        ⚔️
+                    </div>
+                </div>
+
+            </div>
+
+            <MudText Typo="Typo.caption" Align="Align.Center" Class="mt-2" Color="Color.Secondary">
+                ← → liiku | A = vasen puoli | B = oikea puoli
+            </MudText>
+        </div>
+    }
+</MudContainer>
+
+@code {
+    private GameState _state = new();
+    private bool _started;
+    private bool _isNewHighScore;
+    private int _minPossible;
+    private int _maxPossible;
+    private int _highScore;
+    private string _bestRating = "";
+
+    private ElementReference _gameDiv;
+    private CancellationTokenSource? _cts;
+
+    private const double _lanePct = 100.0 / 6.0;
+    private const double _playerRowPct = 80.0; // player "hit" Y%
+    private const double _scrollSpeed = 0.4;   // % per tick
+
+    private double _playerLeftPct => _state.PlayerLane * _lanePct;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadHighScore();
+    }
+
+    private async Task StartGame()
+    {
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+        _isNewHighScore = false;
+
+        _state = new GameState
+        {
+            CurrentValue = 100,
+            PlayerLane = 2,
+            Gates = GateGenerator.Generate(GateGenerator.GateCount())
+        };
+
+        (_minPossible, _maxPossible) = ScoreCalculator.SimulateMinMax(_state.CurrentValue, _state.Gates);
+        _started = true;
+
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(50);
+        await _gameDiv.FocusAsync();
+
+        _ = RunGameLoop(_cts.Token);
+    }
+
+    private async Task RunGameLoop(CancellationToken ct)
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested && !_state.IsGameOver)
+            {
+                await Task.Delay(33, ct); // ~30fps
+
+                foreach (var gate in _state.Gates.Where(g => !g.Applied))
+                    gate.YPosition += _scrollSpeed;
+
+                CheckCollisions();
+
+                if (_state.Gates.All(g => g.Applied))
+                    await EndGame();
+
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    private void CheckCollisions()
+    {
+        foreach (var gate in _state.Gates.Where(g => !g.Applied && g.YPosition >= _playerRowPct))
+        {
+            gate.Applied = true;
+            bool choseA = _state.PlayerLane < 3;
+            var op = choseA ? gate.OptionA : gate.OptionB;
+            _state.CurrentValue = op.Apply(_state.CurrentValue);
+            _state.GatesCompleted++;
+        }
+    }
+
+    private async Task EndGame()
+    {
+        _cts?.Cancel();
+        _state.IsGameOver = true;
+        _state.Rating = ScoreCalculator.GetRating(_state.CurrentValue, _minPossible, _maxPossible);
+
+        if (_state.CurrentValue > _highScore)
+        {
+            _highScore = _state.CurrentValue;
+            _bestRating = _state.Rating;
+            _isNewHighScore = true;
+            await SaveHighScore();
+        }
+    }
+
+    private void HandleKey(KeyboardEventArgs e)
+    {
+        if (_state.IsGameOver) return;
+        if (e.Key == "ArrowLeft" && _state.PlayerLane > 0)
+            _state.PlayerLane--;
+        else if (e.Key == "ArrowRight" && _state.PlayerLane < 5)
+            _state.PlayerLane++;
+    }
+
+    private void GoToMenu()
+    {
+        _started = false;
+        _cts?.Cancel();
+    }
+
+    private async Task LoadHighScore()
+    {
+        try
+        {
+            var data = await JSRuntime.InvokeAsync<SaveData?>("mathWarLoadSave");
+            if (data != null)
+            {
+                _highScore = data.HighScore;
+                _bestRating = data.BestRating;
+            }
+        }
+        catch { }
+    }
+
+    private async Task SaveHighScore()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("mathWarSaveSave", new SaveData
+            {
+                HighScore = _highScore,
+                BestRating = _bestRating
+            });
+        }
+        catch { }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _cts?.Cancel();
+        await Task.CompletedTask;
+    }
+}
