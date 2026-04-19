@@ -6,14 +6,14 @@ public class GateGenerator
 {
     private readonly Random _random = new();
 
-    public List<Gate> Generate(int count, int level, RunSettings settings)
+    public List<Gate> Generate(int count, int level, RunSettings settings, int startValue, string tierSuffix)
     {
         var gates = new List<Gate>();
         for (int i = 0; i < count; i++)
         {
             gates.Add(new Gate
             {
-                Segments = GenerateSegments(level, settings),
+                Segments = GenerateSegments(level, settings, startValue, tierSuffix),
                 YPosition = -20.0 - i * 30.0
             });
         }
@@ -23,7 +23,7 @@ public class GateGenerator
     public int GateCount(int level, RunSettings settings) => 
         Math.Min(5 + (level - 1) + settings.GateCountModifier, 15);
 
-    private List<GateSegment> GenerateSegments(int level, RunSettings settings)
+    private List<GateSegment> GenerateSegments(int level, RunSettings settings, int startValue, string tierSuffix)
     {
         int maxSegments = Math.Min(2 + (level / 2), 5);
         int segCount = _random.Next(2, maxSegments + 1);
@@ -43,57 +43,58 @@ public class GateGenerator
             {
                 StartLane = boundaries[i],
                 EndLane = boundaries[i + 1] - 1,
-                Operation = RandomOperation(level, settings)
+                Operation = RandomOperation(level, settings, startValue, tierSuffix)
             });
         }
         return segments;
     }
 
-    private Operation RandomOperation(int level, RunSettings settings)
+    private Operation RandomOperation(int level, RunSettings settings, int startValue, string tierSuffix)
     {
         int multiplyWeight = Math.Min(1 + level / 2, 3);
         int divideWeight = settings.NoDivisions ? 0 : 1;
         int total = 2 + multiplyWeight + divideWeight;
 
         int roll = _random.Next(0, total);
-        if (roll == 0) return Add(level);
-        if (roll == 1) return Subtract(level);
+        if (roll == 0) return Add(startValue, tierSuffix);
+        if (roll == 1) return Subtract(startValue, tierSuffix);
         if (roll < 2 + multiplyWeight) return Multiply(level, settings);
         return new Operation { Formula = "x/2", Label = "÷2" };
     }
 
-    private Operation Add(int level)
+    private Operation Add(int startValue, string tierSuffix)
     {
-        int max = Math.Min(10 + level * 15, 100);
-        var n = _random.Next(10, max + 1);
-        return new Operation { Formula = $"x+{n}", Label = $"+{n}" };
+        // 5–20% of start value, min 5
+        double pct = 0.05 + _random.NextDouble() * 0.15;
+        int n = Math.Max((int)(startValue * pct), 5);
+        return new Operation { Formula = $"x+{n}", Label = $"+{n}{tierSuffix}" };
     }
 
-    private Operation Subtract(int level)
+    private Operation Subtract(int startValue, string tierSuffix)
     {
-        int max = Math.Min(10 + level * 10, 60);
-        var n = _random.Next(10, max + 1);
-        return new Operation { Formula = $"x-{n}", Label = $"-{n}" };
+        // 3–12% of start value, min 3
+        double pct = 0.03 + _random.NextDouble() * 0.09;
+        int n = Math.Max((int)(startValue * pct), 3);
+        return new Operation { Formula = $"x-{n}", Label = $"-{n}{tierSuffix}" };
     }
 
     private Operation Multiply(int level, RunSettings settings)
     {
-        var options = new List<(string f, string l, double baseVal)> { 
-            ("x*1.5", "×1.5", 1.5), 
-            ("x*2", "×2", 2.0) 
+        // Max ×2 base — higher multipliers (×3, ×4) removed for balance
+        var options = new List<(string f, string l, double baseVal)>
+        {
+            ("x*1.5", "×1.5", 1.5),
+            ("x*2",   "×2",   2.0)
         };
-        if (level >= 3) options.Add(("x*3", "×3", 3.0));
-        if (level >= 5) options.Add(("x*4", "×4", 4.0));
-        
+
         var opt = options[_random.Next(options.Count)];
-        
-        // Apply multiplier bonus if active
+
         if (settings.MultiplyMultiplier != 1.0)
         {
             var newVal = opt.baseVal * settings.MultiplyMultiplier;
-            return new Operation { 
-                Formula = $"x*{newVal.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}", 
-                Label = $"×{newVal.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}" 
+            return new Operation {
+                Formula = $"x*{newVal.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}",
+                Label   = $"×{newVal.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}"
             };
         }
 

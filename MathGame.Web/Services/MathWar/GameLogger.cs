@@ -16,16 +16,16 @@ public class GameLogger
         _entries.Add($"=== MathWar Session {_sessionStart:yyyy-MM-dd HH:mm:ss} UTC ===");
     }
 
-    public void LogLevelStart(int level, int startValue, int gateCount, IEnumerable<BonusCard> bonuses, RunSettings settings)
+    public void LogLevelStart(int level, int startValue, int gateCount, IEnumerable<BonusCard> bonuses, RunSettings settings, string tierSuffix)
     {
         var bonusStr = bonuses.Any() ? string.Join(", ", bonuses.Select(b => b.Title)) : "–";
-        Log($"[TASO {level} ALKU] Arvo={startValue}, Portit={gateCount}, Bonukset=[{bonusStr}], " +
+        Log($"[TASO {level} ALKU] Arvo={startValue}{tierSuffix}, Portit={gateCount}, Bonukset=[{bonusStr}], " +
             $"Nopeus={settings.CurrentScrollSpeed:F2}, Kertoin={settings.MultiplyMultiplier:F2}");
     }
 
-    public void LogGateHit(int level, int before, string operation, int after)
+    public void LogGateHit(int level, int before, string operation, int after, string tierSuffix)
     {
-        Log($"[TASO {level}] Portti: {before} {operation} = {after}");
+        Log($"[TASO {level}] Portti: {before}{tierSuffix} {operation} = {after}{tierSuffix}");
     }
 
     public void LogLevelEnd(int level, int finalValue, string rating, int minPossible, int maxPossible, int bronze, int silver, int gold)
