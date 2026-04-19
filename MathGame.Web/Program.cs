@@ -21,6 +21,8 @@ builder.Services.AddScoped<CsvQuizParser>();
 builder.Services.AddScoped<QuizFactory>();
 builder.Services.AddScoped<GateGenerator>();
 builder.Services.AddScoped<ScoreCalculator>();
+builder.Services.AddScoped<BonusService>();
+builder.Services.AddScoped<GameLogger>();
 Console.WriteLine($"AppBasePath: {appBasePath}");
 
 builder.Services.AddMudServices();

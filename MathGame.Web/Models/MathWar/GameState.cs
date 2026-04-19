@@ -9,4 +9,11 @@ public class GameState
     public int PlayerLane { get; set; } = 2;
     public string? Rating { get; set; }
     public int GatesCompleted { get; set; }
+
+    // Roguelike expansion
+    public RunSettings Settings { get; set; } = new();
+    public List<BonusCard> CollectedBonuses { get; set; } = new();
+    public bool IsInBonusSelection { get; set; }
+    public List<BonusCard> BonusSelectionPool { get; set; } = new();
+    public int SelectedBonusIndex { get; set; } // 0-2 cards, 3=skip
 }

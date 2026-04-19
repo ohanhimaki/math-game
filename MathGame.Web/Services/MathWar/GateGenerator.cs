@@ -6,25 +6,25 @@ public class GateGenerator
 {
     private readonly Random _random = new();
 
-    public List<Gate> Generate(int count, int level = 1)
+    public List<Gate> Generate(int count, int level, RunSettings settings)
     {
         var gates = new List<Gate>();
         for (int i = 0; i < count; i++)
         {
             gates.Add(new Gate
             {
-                Segments = GenerateSegments(level),
+                Segments = GenerateSegments(level, settings),
                 YPosition = -20.0 - i * 30.0
             });
         }
         return gates;
     }
 
-    public int GateCount(int level = 1) => Math.Min(5 + (level - 1), 10);
+    public int GateCount(int level, RunSettings settings) => 
+        Math.Min(5 + (level - 1) + settings.GateCountModifier, 15);
 
-    private List<GateSegment> GenerateSegments(int level)
+    private List<GateSegment> GenerateSegments(int level, RunSettings settings)
     {
-        // Higher levels allow more segments
         int maxSegments = Math.Min(2 + (level / 2), 5);
         int segCount = _random.Next(2, maxSegments + 1);
 
@@ -43,22 +43,22 @@ public class GateGenerator
             {
                 StartLane = boundaries[i],
                 EndLane = boundaries[i + 1] - 1,
-                Operation = RandomOperation(level)
+                Operation = RandomOperation(level, settings)
             });
         }
         return segments;
     }
 
-    private Operation RandomOperation(int level)
+    private Operation RandomOperation(int level, RunSettings settings)
     {
-        // Higher levels: heavier multiply weight, larger numbers
         int multiplyWeight = Math.Min(1 + level / 2, 3);
-        int total = 2 + multiplyWeight + 1; // add, subtract, multiply×weight, divide
+        int divideWeight = settings.NoDivisions ? 0 : 1;
+        int total = 2 + multiplyWeight + divideWeight;
 
         int roll = _random.Next(0, total);
         if (roll == 0) return Add(level);
         if (roll == 1) return Subtract(level);
-        if (roll < 2 + multiplyWeight) return Multiply(level);
+        if (roll < 2 + multiplyWeight) return Multiply(level, settings);
         return new Operation { Formula = "x/2", Label = "÷2" };
     }
 
@@ -76,13 +76,27 @@ public class GateGenerator
         return new Operation { Formula = $"x-{n}", Label = $"-{n}" };
     }
 
-    private Operation Multiply(int level)
+    private Operation Multiply(int level, RunSettings settings)
     {
-        // Level 1-2: ×1.5/×2; level 3+: also ×3; level 5+: also ×4
-        var options = new List<(string f, string l)> { ("x*1.5", "×1.5"), ("x*2", "×2") };
-        if (level >= 3) options.Add(("x*3", "×3"));
-        if (level >= 5) options.Add(("x*4", "×4"));
-        var (f, l) = options[_random.Next(options.Count)];
-        return new Operation { Formula = f, Label = l };
+        var options = new List<(string f, string l, double baseVal)> { 
+            ("x*1.5", "×1.5", 1.5), 
+            ("x*2", "×2", 2.0) 
+        };
+        if (level >= 3) options.Add(("x*3", "×3", 3.0));
+        if (level >= 5) options.Add(("x*4", "×4", 4.0));
+        
+        var opt = options[_random.Next(options.Count)];
+        
+        // Apply multiplier bonus if active
+        if (settings.MultiplyMultiplier != 1.0)
+        {
+            var newVal = opt.baseVal * settings.MultiplyMultiplier;
+            return new Operation { 
+                Formula = $"x*{newVal.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}", 
+                Label = $"×{newVal.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}" 
+            };
+        }
+
+        return new Operation { Formula = opt.f, Label = opt.l };
     }
 }

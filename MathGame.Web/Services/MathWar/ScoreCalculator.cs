@@ -4,9 +4,20 @@ namespace MathGame.Web.Services.MathWar;
 
 public class ScoreCalculator
 {
+    // All operations are monotone-increasing in x, so min/max can be computed
+    // greedily in O(N*S) instead of the exponential O(S^N) recursive approach.
     public (int Min, int Max) SimulateMinMax(int startValue, List<Gate> gates)
     {
-        return Recurse(startValue, 0, gates);
+        int minVal = startValue;
+        int maxVal = startValue;
+
+        foreach (var gate in gates)
+        {
+            maxVal = gate.Segments.Max(s => s.Operation.Apply(maxVal));
+            minVal = gate.Segments.Min(s => s.Operation.Apply(minVal));
+        }
+
+        return (minVal, maxVal);
     }
 
     public int SimulateMax(int startValue, List<Gate> gates)
@@ -14,39 +25,27 @@ public class ScoreCalculator
         return SimulateMinMax(startValue, gates).Max;
     }
 
-    private (int Min, int Max) Recurse(int value, int index, List<Gate> gates)
-    {
-        if (index >= gates.Count)
-            return (value, value);
-
-        int min = int.MaxValue, max = int.MinValue;
-        foreach (var seg in gates[index].Segments)
-        {
-            var next = seg.Operation.Apply(value);
-            var (segMin, segMax) = Recurse(next, index + 1, gates);
-            min = Math.Min(min, segMin);
-            max = Math.Max(max, segMax);
-        }
-        return (min, max);
-    }
-
-    public string GetRating(int finalValue, int min, int max)
+    public string GetRating(int finalValue, int min, int max, RunSettings settings)
     {
         if (max == min) return "Gold";
-        var (bronze, silver, gold) = GetThresholds(min, max);
+        var (bronze, silver, gold) = GetThresholds(min, max, settings);
         if (finalValue >= gold)   return "Gold";
         if (finalValue >= silver) return "Silver";
         if (finalValue >= bronze) return "Bronze";
         return "–";
     }
 
-    public (int Bronze, int Silver, int Gold) GetThresholds(int min, int max)
+    public (int Bronze, int Silver, int Gold) GetThresholds(int min, int max, RunSettings settings)
     {
         if (max == min) return (min, min, min);
+        
+        double diff = max - min;
+        double mod = settings.ThresholdDifficulty;
+
         return (
-            (int)(min + 0.5  * (max - min)),
-            (int)(min + 0.75 * (max - min)),
-            (int)(min + 0.9  * (max - min))
+            (int)(min + (0.5  * mod) * diff),
+            (int)(min + (0.75 * mod) * diff),
+            (int)(min + (0.9  * mod) * diff)
         );
     }
 }

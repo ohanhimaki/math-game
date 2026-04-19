@@ -3,6 +3,8 @@
 @using MathGame.Web.Services.MathWar
 @inject GateGenerator GateGenerator
 @inject ScoreCalculator ScoreCalculator
+@inject BonusService BonusService
+@inject GameLogger GameLogger
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
 
@@ -23,13 +25,58 @@
             <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="StartNewGame">Aloita peli</MudButton>
         </MudPaper>
     }
+    else if (_state.IsInBonusSelection)
+    {
+        <MudPaper Class="pa-8 text-center" Elevation="4">
+            <MudText Typo="Typo.h5" Color="Color.Secondary" Class="mb-1">Taso @_level läpäisty!</MudText>
+            <MudText Typo="Typo.h4" Class="mb-6">Valitse bonus 🃏</MudText>
+
+            <MudGrid Justify="Justify.Center" Class="mb-6">
+                @for (int i = 0; i < _state.BonusSelectionPool.Count; i++)
+                {
+                    var idx = i;
+                    var card = _state.BonusSelectionPool[i];
+                    var isSelected = _state.SelectedBonusIndex == idx;
+                    <MudItem xs="12" sm="4">
+                        <MudPaper Class="@($"pa-4 cursor-pointer {(isSelected ? "border-solid border-2 mud-border-primary" : "")}")" 
+                                  Style="@(isSelected ? "background:rgba(89,74,226,0.1); transform:scale(1.05); transition:0.2s;" : "transition:0.2s;")"
+                                  @onclick="@(() => SelectBonus(idx))">
+                            <MudText Typo="Typo.h3" Class="mb-2">@card.Emoji</MudText>
+                            <MudText Typo="Typo.h6">@card.Title</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@card.Rarity.ToString()</MudText>
+                            <MudText Typo="Typo.body2" Class="mt-2">@card.Description</MudText>
+                        </MudPaper>
+                    </MudItem>
+                }
+                @* Skip Option *@
+                <MudItem xs="12" sm="4">
+                    @{ var isSkipSelected = _state.SelectedBonusIndex == 3; }
+                    <MudPaper Class="@($"pa-4 cursor-pointer {(isSkipSelected ? "border-solid border-2 mud-border-primary" : "")}")"
+                              Style="@(isSkipSelected ? "background:rgba(89,74,226,0.1); transform:scale(1.05); transition:0.2s;" : "transition:0.2s;")"
+                              @onclick="@(() => SelectBonus(3))">
+                        <MudText Typo="Typo.h3" Class="mb-2">⏩</MudText>
+                        <MudText Typo="Typo.h6">Ohita</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Hyöty</MudText>
+                        <MudText Typo="Typo.body2" Class="mt-2">+50 sotilasta välittömästi</MudText>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+
+            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-4 d-block">
+                ← → liiku &nbsp;·&nbsp; ENTER valitse
+            </MudText>
+
+            <div @ref="_gameDiv" tabindex="0" @onkeydown="HandleKey" style="outline:none; width:0; height:0;"></div>
+        </MudPaper>
+    }
     else if (_levelComplete)
     {
+        @* This state is now briefly shown before Bonus Selection *@
         <MudPaper Class="pa-8 text-center" Elevation="4">
             <MudText Typo="Typo.h5" Color="Color.Secondary" Class="mb-1">Kenttä @_level</MudText>
             <MudText Typo="Typo.h3" Class="mb-2">✅ Läpäisty!</MudText>
             <MudText Typo="Typo.h2" Color="Color.Primary" Class="mb-2">@_state.CurrentValue</MudText>
-            <MudText Typo="Typo.h6" Class="mb-4">
+            <MudText Typo="Typo.h6" Class="mb-6">
                 @(_levelRating switch {
                     "Gold"   => "🥇 Kulta",
                     "Silver" => "🥈 Hopea",
@@ -37,10 +84,7 @@
                     _        => ""
                 })
             </MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">
-                Seuraava kenttä: @(_level + 1) &nbsp;·&nbsp; Vaikeutuu!
-            </MudText>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="AdvanceLevel">Jatka →</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="OpenBonusSelection">Jatka →</MudButton>
         </MudPaper>
     }
     else if (_state.IsGameOver)
@@ -51,7 +95,7 @@
             <MudText Typo="Typo.h2" Color="Color.Primary" Class="mb-2">@_state.CurrentValue</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Bronze vaati @_bronzeThreshold &nbsp;·&nbsp; et yltänyt mitaleille</MudText>
             @{
-                var (bv, sv, gv) = ScoreCalculator.GetThresholds(_minPossible, _maxPossible);
+                var (bv, sv, gv) = ScoreCalculator.GetThresholds(_minPossible, _maxPossible, _state.Settings);
             }
             <MudStack Row="true" Justify="Justify.Center" Spacing="3" Class="mb-4">
                 <MudChip T="string" Color="@(_state.CurrentValue >= gv ? Color.Warning : Color.Default)">🥇 @gv</MudChip>
@@ -67,6 +111,10 @@
             }
             <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartNewGame">Pelaa uudelleen</MudButton>
             <MudButton Variant="Variant.Outlined" Color="Color.Default" Class="ml-2" OnClick="GoToMenu">Valikko</MudButton>
+            @if (GameLogger.HasLog)
+            {
+                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Class="ml-2" OnClick="DownloadLog">📄 Lataa loki</MudButton>
+            }
         </MudPaper>
     }
     else
@@ -74,9 +122,16 @@
         <div @ref="_gameDiv" tabindex="0" @onkeydown="HandleKey" @onkeydown:preventDefault
              style="outline:none; user-select:none;">
 
-            @* Current value *@
+            @* Current value & bonuses *@
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
-                <MudText Typo="Typo.h6" Color="Color.Secondary">Kenttä @_level</MudText>
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.h6" Color="Color.Secondary">Kenttä @_level</MudText>
+                    <div style="display:flex; gap:2px;">
+                        @foreach(var b in _state.CollectedBonuses) {
+                            <span title="@b.Title: @b.Description">@b.Emoji</span>
+                        }
+                    </div>
+                </MudStack>
                 <MudText Typo="Typo.h3" Color="Color.Primary">@_state.CurrentValue</MudText>
                 <MudText Typo="Typo.body2" Color="Color.Secondary">@(_state.GatesCompleted)/@_operationalGateCount</MudText>
             </MudStack>
@@ -163,7 +218,6 @@
 
     private const double _lanePct = 100.0 / 6.0;
     private const double _playerRowPct = 80.0;
-    private const double _scrollSpeed = 0.4;
 
     private double _playerLeftPct => _state.PlayerLane * _lanePct;
 
@@ -176,6 +230,12 @@
     {
         _level = 1;
         _idealStartValue = 100;
+        _state = new GameState 
+        { 
+            Settings = new RunSettings(),
+            CurrentValue = 100
+        };
+        GameLogger.StartSession();
         return StartLevel(100);
     }
 
@@ -185,13 +245,14 @@
         _cts = new CancellationTokenSource();
         _isNewHighScore = false;
         _levelComplete = false;
+        _state.IsInBonusSelection = false;
 
-        var operationalGates = GateGenerator.Generate(GateGenerator.GateCount(_level), _level);
+        var operationalGates = GateGenerator.Generate(GateGenerator.GateCount(_level, _state.Settings), _level, _state.Settings);
         _operationalGateCount = operationalGates.Count;
 
-        // Thresholds always based on ideal start (what max player could have entered with)
+        // Thresholds always based on ideal start
         (_minPossible, _maxPossible) = ScoreCalculator.SimulateMinMax(_idealStartValue, operationalGates);
-        var (bronzeVal, silverVal, goldVal) = ScoreCalculator.GetThresholds(_minPossible, _maxPossible);
+        var (bronzeVal, silverVal, goldVal) = ScoreCalculator.GetThresholds(_minPossible, _maxPossible, _state.Settings);
         _bronzeThreshold = bronzeVal;
 
         var lastY = -20.0 - (operationalGates.Count - 1) * 30.0;
@@ -202,30 +263,62 @@
             ThresholdGate("🥇", goldVal,   "rgba(200,170,30,0.35)",  "rgba(230,200,50,0.9)",   lastY - 70),
         };
 
-        _state = new GameState
-        {
-            CurrentValue = actualStartValue,
-            PlayerLane = 2,
-            Gates = operationalGates.Concat(thresholdGates).ToList()
-        };
+        _state.Gates = operationalGates.Concat(thresholdGates).ToList();
+        _state.GatesCompleted = 0;
+        _state.CurrentValue = actualStartValue;
+        _state.PlayerLane = 2;
+        _state.IsGameOver = false;
 
         _started = true;
+        GameLogger.LogLevelStart(_level, actualStartValue, _operationalGateCount, _state.CollectedBonuses, _state.Settings);
 
         await InvokeAsync(StateHasChanged);
-        await Task.Delay(50);
+        await Task.Delay(100);
         await _gameDiv.FocusAsync();
 
         _ = RunGameLoop(_cts.Token);
     }
 
+    private async Task OpenBonusSelection()
+    {
+        _state.IsInBonusSelection = true;
+        _state.BonusSelectionPool = BonusService.GetBonusPool(_levelRating, _state.CollectedBonuses);
+        _state.SelectedBonusIndex = 0;
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(50);
+        await _gameDiv.FocusAsync();
+    }
+
+    private async Task SelectBonus(int index)
+    {
+        if (index >= 0 && index < _state.BonusSelectionPool.Count)
+        {
+            var card = _state.BonusSelectionPool[index];
+            card.Effect?.Invoke(_state.Settings, _state);
+            _state.CollectedBonuses.Add(card);
+            GameLogger.LogBonusSelected(_level, card.Title, card.Description);
+        }
+        else if (index == 3) // Skip
+        {
+            _state.CurrentValue += 50;
+            GameLogger.LogBonusSkipped(_level);
+        }
+
+        await AdvanceLevel();
+    }
+
     private async Task AdvanceLevel()
     {
         // Next level's ideal start = max possible outcome of this level from the ideal start
-        // Cap to prevent exponential explosion in simulation
         _idealStartValue = Math.Min(
             ScoreCalculator.SimulateMax(_idealStartValue, _state.Gates.Where(g => !g.IsThreshold).ToList()),
             10_000_000);
+
         _level++;
+
+        // Natural speed increase
+        _state.Settings.BaseScrollSpeed *= 1.1;
+
         await StartLevel(_state.CurrentValue);
     }
 
@@ -246,12 +339,12 @@
     {
         try
         {
-            while (!ct.IsCancellationRequested && !_state.IsGameOver && !_levelComplete)
+            while (!ct.IsCancellationRequested && !_state.IsGameOver && !_levelComplete && !_state.IsInBonusSelection)
             {
                 await Task.Delay(33, ct);
 
                 foreach (var gate in _state.Gates.Where(g => !g.Applied))
-                    gate.YPosition += _scrollSpeed;
+                    gate.YPosition += _state.Settings.CurrentScrollSpeed;
 
                 CheckCollisions();
 
@@ -273,7 +366,11 @@
             {
                 var seg = gate.Segments.FirstOrDefault(s => s.StartLane <= _state.PlayerLane && _state.PlayerLane <= s.EndLane);
                 if (seg != null)
-                    _state.CurrentValue = seg.Operation.Apply(_state.CurrentValue);
+                {
+                    var before = _state.CurrentValue;
+                    _state.CurrentValue = seg.Operation.Apply(before);
+                    GameLogger.LogGateHit(_level, before, seg.Operation.Label, _state.CurrentValue);
+                }
                 _state.GatesCompleted++;
             }
         }
@@ -282,19 +379,23 @@
     private async Task EndLevel()
     {
         _cts?.Cancel();
-        _levelRating = ScoreCalculator.GetRating(_state.CurrentValue, _minPossible, _maxPossible);
+        _levelRating = ScoreCalculator.GetRating(_state.CurrentValue, _minPossible, _maxPossible, _state.Settings);
+        var (bv, sv, gv) = ScoreCalculator.GetThresholds(_minPossible, _maxPossible, _state.Settings);
+        GameLogger.LogLevelEnd(_level, _state.CurrentValue, _levelRating, _minPossible, _maxPossible, bv, sv, gv);
 
         if (_state.CurrentValue >= _bronzeThreshold)
         {
-            // Passed this level
             await CheckHighScore();
             _levelComplete = true;
+            // Auto-open bonus selection after a small delay
+            await Task.Delay(1000);
+            await OpenBonusSelection();
         }
         else
         {
-            // Failed to reach bronze → game over
             _state.IsGameOver = true;
             _state.Rating = _levelRating;
+            GameLogger.LogGameOver(_level, _state.CurrentValue, _levelRating);
             await CheckHighScore();
         }
     }
@@ -311,9 +412,22 @@
         }
     }
 
-    private void HandleKey(KeyboardEventArgs e)
+    private async Task HandleKey(KeyboardEventArgs e)
     {
+        if (_state.IsInBonusSelection)
+        {
+            if (e.Key == "ArrowLeft")
+                _state.SelectedBonusIndex = (_state.SelectedBonusIndex - 1 + 4) % 4;
+            else if (e.Key == "ArrowRight")
+                _state.SelectedBonusIndex = (_state.SelectedBonusIndex + 1) % 4;
+            else if (e.Key == "Enter" || e.Key == " ")
+                await SelectBonus(_state.SelectedBonusIndex);
+
+            return;
+        }
+
         if (_state.IsGameOver || _levelComplete) return;
+
         if (e.Key == "ArrowLeft" && _state.PlayerLane > 0)
             _state.PlayerLane--;
         else if (e.Key == "ArrowRight" && _state.PlayerLane < 5)
@@ -324,6 +438,7 @@
     {
         _started = false;
         _levelComplete = false;
+        _state.IsInBonusSelection = false;
         _cts?.Cancel();
     }
 
@@ -356,9 +471,16 @@
         catch { }
     }
 
+    private async Task DownloadLog()
+    {
+        var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+        await JSRuntime.InvokeVoidAsync("downloadFile", $"mathwar_loki_{timestamp}.txt", GameLogger.GetFullLog());
+    }
+
     public async ValueTask DisposeAsync()
     {
         _cts?.Cancel();
         await Task.CompletedTask;
     }
 }
+
