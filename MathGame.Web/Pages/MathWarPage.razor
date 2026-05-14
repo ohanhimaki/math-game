@@ -1,0 +1,487 @@
+@page "/math-war"
+@using MathGame.Web.Models.MathWar
+@using MathGame.Web.Services.MathWar
+@inject GateGenerator GateGenerator
+@inject ScoreCalculator ScoreCalculator
+@inject BonusService BonusService
+@inject GameLogger GameLogger
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<PageTitle>MathWar</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-4">
+    @if (!_started)
+    {
+        <MudPaper Class="pa-8 text-center" Elevation="4">
+            <MudText Typo="Typo.h4" Class="mb-2">⚔️ MathWar</MudText>
+            <MudText Typo="Typo.body1" Class="mb-4" Color="Color.Secondary">
+                Ohjaa armeijasi porttien läpi. Valitse operaatio siirtymällä oikealle tai vasemmalle sarakkeelle ennen porttiin osumista.
+            </MudText>
+            @if (_bestLevel > 0)
+            {
+                <MudText Typo="Typo.body2" Class="mb-4">🏆 Ennätys: kenttä <b>@_bestLevel</b> (@_bestRating)</MudText>
+            }
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="StartNewGame">Aloita peli</MudButton>
+        </MudPaper>
+    }
+    else if (_state.IsInBonusSelection)
+    {
+        <MudPaper Class="pa-8 text-center" Elevation="4">
+            <MudText Typo="Typo.h5" Color="Color.Secondary" Class="mb-1">Taso @_level läpäisty!</MudText>
+            <MudText Typo="Typo.h4" Class="mb-6">Valitse bonus 🃏</MudText>
+
+            <MudGrid Justify="Justify.Center" Class="mb-6">
+                @for (int i = 0; i < _state.BonusSelectionPool.Count; i++)
+                {
+                    var idx = i;
+                    var card = _state.BonusSelectionPool[i];
+                    var isSelected = _state.SelectedBonusIndex == idx;
+                    <MudItem xs="12" sm="4">
+                        <MudPaper Class="@($"pa-4 cursor-pointer {(isSelected ? "border-solid border-2 mud-border-primary" : "")}")" 
+                                  Style="@(isSelected ? "background:rgba(89,74,226,0.1); transform:scale(1.05); transition:0.2s;" : "transition:0.2s;")"
+                                  @onclick="@(() => SelectBonus(idx))">
+                            <MudText Typo="Typo.h3" Class="mb-2">@card.Emoji</MudText>
+                            <MudText Typo="Typo.h6">@card.Title</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@card.Rarity.ToString()</MudText>
+                            <MudText Typo="Typo.body2" Class="mt-2">@card.Description</MudText>
+                        </MudPaper>
+                    </MudItem>
+                }
+                @* Skip Option *@
+                <MudItem xs="12" sm="4">
+                    @{ var isSkipSelected = _state.SelectedBonusIndex == 3; }
+                    <MudPaper Class="@($"pa-4 cursor-pointer {(isSkipSelected ? "border-solid border-2 mud-border-primary" : "")}")"
+                              Style="@(isSkipSelected ? "background:rgba(89,74,226,0.1); transform:scale(1.05); transition:0.2s;" : "transition:0.2s;")"
+                              @onclick="@(() => SelectBonus(3))">
+                        <MudText Typo="Typo.h3" Class="mb-2">⏩</MudText>
+                        <MudText Typo="Typo.h6">Ohita</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Hyöty</MudText>
+                        <MudText Typo="Typo.body2" Class="mt-2">Ohita bonus, ei vaikutusta</MudText>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+
+            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-4 d-block">
+                ← → liiku &nbsp;·&nbsp; ENTER valitse
+            </MudText>
+
+            <div @ref="_gameDiv" tabindex="0" @onkeydown="HandleKey" style="outline:none; width:0; height:0;"></div>
+        </MudPaper>
+    }
+    else if (_levelComplete)
+    {
+        @* This state is now briefly shown before Bonus Selection *@
+        <MudPaper Class="pa-8 text-center" Elevation="4">
+            <MudText Typo="Typo.h5" Color="Color.Secondary" Class="mb-1">Kenttä @_level</MudText>
+            <MudText Typo="Typo.h3" Class="mb-2">✅ Läpäisty!</MudText>
+            <MudText Typo="Typo.h2" Color="Color.Primary" Class="mb-2">@FormatValue(_state.CurrentValue)</MudText>
+            <MudText Typo="Typo.h6" Class="mb-6">
+                @(_levelRating switch {
+                    "Gold"   => "🥇 Kulta",
+                    "Silver" => "🥈 Hopea",
+                    "Bronze" => "🥉 Pronssi",
+                    _        => ""
+                })
+            </MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="OpenBonusSelection">Jatka →</MudButton>
+        </MudPaper>
+    }
+    else if (_state.IsGameOver)
+    {
+        <MudPaper Class="pa-8 text-center" Elevation="4">
+            <MudText Typo="Typo.h4" Class="mb-2">Peli ohi!</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-1">Kenttä @_level</MudText>
+            <MudText Typo="Typo.h2" Color="Color.Primary" Class="mb-2">@FormatValue(_state.CurrentValue)</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Bronze vaati @FormatValue(_bronzeThreshold) &nbsp;·&nbsp; et yltänyt mitaleille</MudText>
+            @{
+                var (bv, sv, gv) = ScoreCalculator.GetThresholds(_minPossible, _maxPossible, _state.Settings);
+            }
+            <MudStack Row="true" Justify="Justify.Center" Spacing="3" Class="mb-4">
+                <MudChip T="string" Color="@(_state.CurrentValue >= gv ? Color.Warning : Color.Default)">🥇 @FormatValue(gv)</MudChip>
+                <MudChip T="string" Style="@(_state.CurrentValue >= sv ? "background:rgba(160,160,175,0.4)" : "")">🥈 @FormatValue(sv)</MudChip>
+                <MudChip T="string" Style="@(_state.CurrentValue >= bv ? "background:rgba(176,141,87,0.4)" : "")">🥉 @FormatValue(bv)</MudChip>
+            </MudStack>
+            <MudText Typo="Typo.body2" Class="mb-2" Color="Color.Secondary">
+                Ideaali: @FormatValue(_maxPossible) &nbsp;|&nbsp; Huonoin: @FormatValue(_minPossible)
+            </MudText>
+            @if (_isNewHighScore)
+            {
+                <MudAlert Severity="Severity.Success" Class="mb-4">🎉 Uusi ennätys! Kenttä @_level</MudAlert>
+            }
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartNewGame">Pelaa uudelleen</MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Default" Class="ml-2" OnClick="GoToMenu">Valikko</MudButton>
+            @if (GameLogger.HasLog)
+            {
+                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Class="ml-2" OnClick="DownloadLog">📄 Lataa loki</MudButton>
+            }
+        </MudPaper>
+    }
+    else
+    {
+        <div @ref="_gameDiv" tabindex="0" @onkeydown="HandleKey" @onkeydown:preventDefault
+             style="outline:none; user-select:none;">
+
+            @* Current value & bonuses *@
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.h6" Color="Color.Secondary">Kenttä @_level</MudText>
+                    @if (!string.IsNullOrEmpty(_levelTheme))
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Warning">@_levelTheme</MudText>
+                    }
+                    <div style="display:flex; gap:2px;">
+                        @foreach(var b in _state.CollectedBonuses) {
+                            <span title="@b.Title: @b.Description">@b.Emoji</span>
+                        }
+                    </div>
+                </MudStack>
+                <MudText Typo="Typo.h3" Color="Color.Primary">@FormatValue(_state.CurrentValue)</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@(_state.GatesCompleted)/@_operationalGateCount</MudText>
+            </MudStack>
+
+            @* Game field *@
+            <div style="position:relative; height:500px; background:#111; border-radius:8px; overflow:hidden; border:2px solid #333;">
+
+                @* Lane lines *@
+                @for (int l = 1; l < 6; l++)
+                {
+                    var pct = l * (100.0 / 6.0);
+                    <div style="position:absolute; left:@(pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%; top:0; bottom:0; width:1px; background:rgba(255,255,255,0.12); z-index:1;"></div>
+                }
+
+                @* Gates *@
+                @foreach (var gate in _state.Gates.Where(g => !g.Applied))
+                {
+                    var yStr = gate.YPosition.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+                    if (gate.IsThreshold)
+                    {
+                        @* Threshold / trophy gate – full width *@
+                        var metColor = _state.CurrentValue >= gate.ThresholdValue ? "rgba(255,255,255,0.15)" : gate.ThresholdColor;
+                        <div style="position:absolute; top:@(yStr)%; left:0; right:0; z-index:3; height:54px; display:flex; align-items:center; justify-content:center; background:@metColor; border-top:2px solid @gate.ThresholdColor; border-bottom:2px solid @gate.ThresholdColor; gap:12px;">
+                            <span style="font-size:28px;">@gate.ThresholdEmoji</span>
+                            <MudText Typo="Typo.h5" Style="color:#fff; font-weight:bold;">@FormatValue(gate.ThresholdValue)</MudText>
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="position:absolute; top:@(yStr)%; left:0; right:0; z-index:3; display:flex; height:60px;">
+                            @for (int si = 0; si < gate.Segments.Count; si++)
+                            {
+                                var seg = gate.Segments[si];
+                                var segWidth = (seg.EndLane - seg.StartLane + 1) * _lanePct;
+                                var isEven = si % 2 == 0;
+                                var bg   = isEven ? "rgba(30,100,200,0.3)"  : "rgba(180,120,20,0.3)";
+                                var bdr  = isEven ? "rgba(60,130,230,0.7)"  : "rgba(210,150,30,0.7)";
+                                var radiusL = si == 0 ? "4px" : "0";
+                                var radiusR = si == gate.Segments.Count - 1 ? "4px" : "0";
+                                <div style="width:@(segWidth.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%; display:flex; align-items:center; justify-content:center; background:@bg; border:1px solid @bdr; border-radius:@radiusL @radiusR @radiusR @radiusL;">
+                                    <MudText Typo="Typo.h5" Style="color:#fff; font-weight:bold;">@seg.Operation.Label</MudText>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+
+                @* Player *@
+                <div style="position:absolute; bottom:20px; left:@(_playerLeftPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%; width:@(_lanePct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%; display:flex; align-items:center; justify-content:center; z-index:5; transition:left 0.1s;">
+                    <div style="width:48px; height:48px; border-radius:50%; background:#c41e3a; display:flex; align-items:center; justify-content:center; font-size:24px; box-shadow:0 0 12px #c41e3a;">
+                        ⚔️
+                    </div>
+                </div>
+
+            </div>
+
+            <MudText Typo="Typo.caption" Align="Align.Center" Class="mt-2" Color="Color.Secondary">
+                ← → liiku sarakkeesta toiseen
+            </MudText>
+        </div>
+    }
+</MudContainer>
+
+@code {
+    private GameState _state = new();
+    private bool _started;
+    private bool _levelComplete;
+    private bool _isNewHighScore;
+    private int _minPossible;
+    private int _maxPossible;
+    private int _bestLevel;
+    private string _bestRating = "";
+    private string _levelRating = "";
+    private int _bronzeThreshold;
+    private int _operationalGateCount;
+    private int _level = 1;
+    private string? _levelTheme;
+
+    private ElementReference _gameDiv;
+    private CancellationTokenSource? _cts;
+
+    private const double _lanePct = 100.0 / 6.0;
+    private const double _playerRowPct = 80.0;
+
+    private double _playerLeftPct => _state.PlayerLane * _lanePct;
+
+    private static string FormatValue(int v)
+    {
+        int abs = Math.Abs(v);
+        string sign = v < 0 ? "−" : "";
+        if (abs >= 1_000_000_000) return $"{sign}{abs / 1_000_000_000.0:F1}B";
+        if (abs >= 1_000_000)     return $"{sign}{abs / 1_000_000.0:F1}M";
+        if (abs >= 10_000)        return $"{sign}{abs / 1_000}k";
+        return v.ToString();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadHighScore();
+    }
+
+    private Task StartNewGame()
+    {
+        _level = 1;
+        var config = LevelLibrary.Get(1);
+        _state = new GameState
+        {
+            Settings = new RunSettings(),
+            CurrentValue = config.StartValue
+        };
+        GameLogger.StartSession();
+        return StartLevel();
+    }
+
+    private async Task StartLevel()
+    {
+        var config = LevelLibrary.Get(_level);
+        _levelTheme = config.Theme;
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+        _isNewHighScore = false;
+        _levelComplete = false;
+        _state.IsInBonusSelection = false;
+
+        var operationalGates = GateGenerator.Generate(config, _level, _state.Settings);
+        _operationalGateCount = operationalGates.Count;
+
+        // Thresholds based on the level's defined start value (always consistent)
+        (_minPossible, _maxPossible) = ScoreCalculator.SimulateMinMax(config.StartValue, operationalGates);
+        var (bronzeVal, silverVal, goldVal) = ScoreCalculator.GetThresholds(_minPossible, _maxPossible, _state.Settings);
+        _bronzeThreshold = bronzeVal;
+
+        var lastY = -20.0 - (operationalGates.Count - 1) * 30.0;
+        var thresholdGates = new List<Gate>
+        {
+            ThresholdGate("🥉", bronzeVal, "rgba(176,141,87,0.35)",  "rgba(205,170,100,0.9)",  lastY - 30),
+            ThresholdGate("🥈", silverVal, "rgba(160,160,175,0.35)", "rgba(190,190,210,0.9)",  lastY - 50),
+            ThresholdGate("🥇", goldVal,   "rgba(200,170,30,0.35)",  "rgba(230,200,50,0.9)",   lastY - 70),
+        };
+
+        _state.Gates = operationalGates.Concat(thresholdGates).ToList();
+        _state.GatesCompleted = 0;
+        _state.CurrentValue = config.StartValue;  // always reset to predefined start
+        _state.PlayerLane = 2;
+        _state.IsGameOver = false;
+
+        _started = true;
+        GameLogger.LogLevelStart(_level, config.StartValue, _operationalGateCount, _state.CollectedBonuses, _state.Settings);
+
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(100);
+        await _gameDiv.FocusAsync();
+
+        _ = RunGameLoop(_cts.Token);
+    }
+
+    private async Task OpenBonusSelection()
+    {
+        _state.IsInBonusSelection = true;
+        _state.BonusSelectionPool = BonusService.GetBonusPool(_levelRating, _state.CollectedBonuses);
+        _state.SelectedBonusIndex = 0;
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(50);
+        await _gameDiv.FocusAsync();
+    }
+
+    private async Task SelectBonus(int index)
+    {
+        if (index >= 0 && index < _state.BonusSelectionPool.Count)
+        {
+            var card = _state.BonusSelectionPool[index];
+            card.Effect?.Invoke(_state.Settings, _state);
+            _state.CollectedBonuses.Add(card);
+            GameLogger.LogBonusSelected(_level, card.Title, card.Description);
+        }
+        else if (index == 3) // Skip — no carry-over value, skip gives nothing
+        {
+            GameLogger.LogBonusSkipped(_level);
+        }
+
+        await AdvanceLevel();
+    }
+
+    private async Task AdvanceLevel()
+    {
+        _level++;
+        _state.Settings.BaseScrollSpeed *= 1.1;
+        await StartLevel();
+    }
+
+    private static Gate ThresholdGate(string emoji, int value, string bg, string border, double y) => new Gate
+    {
+        IsThreshold = true,
+        ThresholdEmoji = emoji,
+        ThresholdValue = value,
+        ThresholdColor = bg,
+        YPosition = y,
+        Segments = new List<GateSegment>
+        {
+            new GateSegment { StartLane = 0, EndLane = 5, Operation = new Operation { Formula = "x", Label = "" } }
+        }
+    };
+
+    private async Task RunGameLoop(CancellationToken ct)
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested && !_state.IsGameOver && !_levelComplete && !_state.IsInBonusSelection)
+            {
+                await Task.Delay(33, ct);
+
+                foreach (var gate in _state.Gates.Where(g => !g.Applied))
+                    gate.YPosition += _state.Settings.CurrentScrollSpeed;
+
+                CheckCollisions();
+
+                if (_state.Gates.All(g => g.Applied))
+                    await EndLevel();
+
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    private void CheckCollisions()
+    {
+        foreach (var gate in _state.Gates.Where(g => !g.Applied && g.YPosition >= _playerRowPct))
+        {
+            gate.Applied = true;
+            if (!gate.IsThreshold)
+            {
+                var seg = gate.Segments.FirstOrDefault(s => s.StartLane <= _state.PlayerLane && _state.PlayerLane <= s.EndLane);
+                if (seg != null)
+                {
+                    var before = _state.CurrentValue;
+                    _state.CurrentValue = seg.Operation.Apply(before);
+                    GameLogger.LogGateHit(_level, before, seg.Operation.Label, _state.CurrentValue);
+                }
+                _state.GatesCompleted++;
+            }
+        }
+    }
+
+    private async Task EndLevel()
+    {
+        _cts?.Cancel();
+        _levelRating = ScoreCalculator.GetRating(_state.CurrentValue, _minPossible, _maxPossible, _state.Settings);
+        var (bv, sv, gv) = ScoreCalculator.GetThresholds(_minPossible, _maxPossible, _state.Settings);
+        GameLogger.LogLevelEnd(_level, _state.CurrentValue, _levelRating, _minPossible, _maxPossible, bv, sv, gv);
+
+        if (_state.CurrentValue >= _bronzeThreshold)
+        {
+            await CheckHighScore();
+            _levelComplete = true;
+            // Auto-open bonus selection after a small delay
+            await Task.Delay(1000);
+            await OpenBonusSelection();
+        }
+        else
+        {
+            _state.IsGameOver = true;
+            _state.Rating = _levelRating;
+            GameLogger.LogGameOver(_level, _state.CurrentValue, _levelRating);
+            await CheckHighScore();
+        }
+    }
+
+    private async Task CheckHighScore()
+    {
+        if (_level > _bestLevel)
+        {
+            _bestLevel = _level;
+            _bestRating = _levelRating;
+            _isNewHighScore = true;
+            await SaveHighScore();
+        }
+    }
+
+    private async Task HandleKey(KeyboardEventArgs e)
+    {
+        if (_state.IsInBonusSelection)
+        {
+            if (e.Key == "ArrowLeft")
+                _state.SelectedBonusIndex = (_state.SelectedBonusIndex - 1 + 4) % 4;
+            else if (e.Key == "ArrowRight")
+                _state.SelectedBonusIndex = (_state.SelectedBonusIndex + 1) % 4;
+            else if (e.Key == "Enter" || e.Key == " ")
+                await SelectBonus(_state.SelectedBonusIndex);
+
+            return;
+        }
+
+        if (_state.IsGameOver || _levelComplete) return;
+
+        if (e.Key == "ArrowLeft" && _state.PlayerLane > 0)
+            _state.PlayerLane--;
+        else if (e.Key == "ArrowRight" && _state.PlayerLane < 5)
+            _state.PlayerLane++;
+    }
+
+    private void GoToMenu()
+    {
+        _started = false;
+        _levelComplete = false;
+        _state.IsInBonusSelection = false;
+        _cts?.Cancel();
+    }
+
+    private async Task LoadHighScore()
+    {
+        try
+        {
+            var data = await JSRuntime.InvokeAsync<SaveData?>("mathWarLoadSave");
+            if (data != null)
+            {
+                _bestRating = data.BestRating;
+                _bestLevel = data.BestLevel;
+            }
+        }
+        catch { }
+    }
+
+    private async Task SaveHighScore()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("mathWarSaveSave", new SaveData
+            {
+                BestRating = _bestRating,
+                BestLevel = _bestLevel
+            });
+        }
+        catch { }
+    }
+
+    private async Task DownloadLog()
+    {
+        var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+        await JSRuntime.InvokeVoidAsync("downloadFile", $"mathwar_loki_{timestamp}.txt", GameLogger.GetFullLog());
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _cts?.Cancel();
+        await Task.CompletedTask;
+    }
+}
+
