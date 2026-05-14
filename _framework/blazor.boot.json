@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "MathGame.Web",
   "resources": {
-    "hash": "sha256-DrvZtuK0w3YhtYTz5BY1JQ+kZRl8BgF2xaBTg3/z/Sk=",
+    "hash": "sha256-SA0q2aSj4hyAF85MIEtZKODcHScAYuu5tXURpWiT1f8=",
     "fingerprinting": {
       "CsvHelper.4zhysgmj1f.wasm": "CsvHelper.wasm",
       "ExtendedNumerics.BigDecimal.5y5qzs3sjq.wasm": "ExtendedNumerics.BigDecimal.wasm",
@@ -27,7 +27,7 @@
       "Microsoft.Extensions.Primitives.lflqanr0jf.wasm": "Microsoft.Extensions.Primitives.wasm",
       "Microsoft.JSInterop.n1qmr6hqiq.wasm": "Microsoft.JSInterop.wasm",
       "Microsoft.JSInterop.WebAssembly.hfmlhg1ldw.wasm": "Microsoft.JSInterop.WebAssembly.wasm",
-      "MudBlazor.q3kcn9di46.wasm": "MudBlazor.wasm",
+      "MudBlazor.o0997i2gw3.wasm": "MudBlazor.wasm",
       "NCalc.Core.bgz2w8oepy.wasm": "NCalc.Core.wasm",
       "NCalc.Sync.2pzzwoy72b.wasm": "NCalc.Sync.wasm",
       "Parlot.cmqweztbu1.wasm": "Parlot.wasm",
@@ -72,7 +72,7 @@
       "System.Threading.qft7wbe9n3.wasm": "System.Threading.wasm",
       "System.dqfxtvioy0.wasm": "System.wasm",
       "System.Private.CoreLib.v4veads68p.wasm": "System.Private.CoreLib.wasm",
-      "MathGame.Web.hgwip1bzyr.wasm": "MathGame.Web.wasm",
+      "MathGame.Web.1g6g2om5fk.wasm": "MathGame.Web.wasm",
       "dotnet.js": "dotnet.js",
       "dotnet.native.l1ds2rhypd.js": "dotnet.native.js",
       "dotnet.native.etgrtk5jba.wasm": "dotnet.native.wasm",
@@ -124,7 +124,7 @@
       "Microsoft.Extensions.Primitives.lflqanr0jf.wasm": "sha256-AaUNPeWCmUYSh20W4X8Fdm1R64TV3W41hat/GJlV1rY=",
       "Microsoft.JSInterop.n1qmr6hqiq.wasm": "sha256-W5Dg4hqmzUUSwApM0ONFhNf0QToANHBSMtrOoZishZ8=",
       "Microsoft.JSInterop.WebAssembly.hfmlhg1ldw.wasm": "sha256-M1qrUhdWLB+6f4w0nyrEazG7ekxANR+a10XUkoib/gU=",
-      "MudBlazor.q3kcn9di46.wasm": "sha256-OoTZe2cvWXz2G0NhmTUUsn5Diyiz2JespI9TkKZYN4M=",
+      "MudBlazor.o0997i2gw3.wasm": "sha256-GFs4aCAUJt2iuByS5VMDwztf99bhHJAA40A3SSYpDcs=",
       "NCalc.Core.bgz2w8oepy.wasm": "sha256-BaCSYIxN1h6+NuO8c9qqHbARE82byDceeUr3eEGbYCQ=",
       "NCalc.Sync.2pzzwoy72b.wasm": "sha256-igBBpQwhurm+d02g9vJnSxzY/JLRRA2vQt7R0/tjh0E=",
       "Parlot.cmqweztbu1.wasm": "sha256-xBiGXu/xlScz/bx0ituIJ3HqANJgd5Bo+4NuCNyU/+0=",
@@ -167,7 +167,7 @@
       "System.Text.RegularExpressions.9pl6a76vfy.wasm": "sha256-o2b1hnoLnmiNMfA8dCcZGPTpAzw0ZPgHmDoGz49nLcU=",
       "System.Threading.qft7wbe9n3.wasm": "sha256-OiObWs5Imvr4aQUyScKva8bVaKllvlBswESZmZPtSUk=",
       "System.dqfxtvioy0.wasm": "sha256-5QZAjy4n7513fYxCXSXTsAkUmRsLiZ8m621Ot4k7FB0=",
-      "MathGame.Web.hgwip1bzyr.wasm": "sha256-0UGvV/h2o6lJZDt3z56xq3glS2j91u54nOADV9HhwG4="
+      "MathGame.Web.1g6g2om5fk.wasm": "sha256-ocavDVRXn15rOKbp7apnJ5vocgjVBNP8oEPKeRi3Sek="
     }
   },
   "cacheBootResources": true,
