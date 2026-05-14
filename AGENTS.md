@@ -1,6 +1,6 @@
 # AGENTS.md - Project Context for AI Agents
 
-**Last Updated:** 2025-11-29  
+**Last Updated:** 2026-04-19  
 **Project:** MathGame.Web - Multi-Game Web Application  
 **Technology Stack:** Blazor WebAssembly, C#, MudBlazor, .NET 9
 
@@ -8,7 +8,9 @@
 
 ## Project Overview
 
-MathGame.Web is a Blazor WebAssembly application that hosts multiple interactive quiz games. The primary focus is on the **Spotify Playlist Quiz Game**, where players guess the release year of songs from Spotify playlists.
+MathGame.Web is a Blazor WebAssembly application that hosts multiple interactive games:
+1. **Spotify Playlist Quiz Game** (HITSTER-style) — primary feature, fully complete
+2. **MathWar** — roguelike arcade math game, actively in development (branch: `newgame-MathWar`)
 
 **Key Statistics:**
 - ~2,100 lines of code (C# + Razor) - fully featured HITSTER-style game
@@ -33,36 +35,45 @@ MathGame.Web is a Blazor WebAssembly application that hosts multiple interactive
 ```
 MathGame.Web/
 ├── Pages/                    # Routable pages
-│   ├── SpotifyQuizPlayer.razor    # Main game entry point
+│   ├── SpotifyQuizPlayer.razor    # Main game entry point (quiz)
 │   ├── CsvQuizCreator.razor       # Alternative creator
 │   ├── QuizOrderGame.razor        # Order-based quiz
-│   ├── MathGamePage.razor         # Math game mode
+│   ├── MathGamePage.razor         # Old math game mode
+│   ├── MathWarPage.razor          # MathWar roguelike game (~490 lines)
 │   └── Home.razor                 # Landing page
 ├── Components/               # Reusable components
-│   ├── RunQuizGame.razor          # Core game component (~780 lines)
-│   ├── RunMathGame.razor          # Math game component
+│   ├── RunQuizGame.razor          # Core quiz component (~1,190 lines)
+│   ├── RunMathGame.razor          # Old math game component
 │   ├── SelectGame.razor           # Game mode selector
 │   └── ShowMathGameNumber.razor   # Math display
 ├── Models/
 │   ├── Quiz/                 # Quiz domain models
-│   │   ├── Quiz.cs               # Quiz<T>, QuizItem<T>
-│   │   ├── QuizGame.cs           # Game state, Player<T>
-│   │   ├── QuizFactory.cs        # Factory for game creation
-│   │   ├── CsvQuizParser.cs      # CSV → Quiz<int> parser
-│   │   └── SpotifyTrack.cs       # CSV record mapping
+│   │   ├── Quiz.cs, QuizGame.cs, QuizFactory.cs, CsvQuizParser.cs, SpotifyTrack.cs
+│   ├── MathWar/              # MathWar domain models
+│   │   ├── GameState.cs          # Player pos, current value, gates, bonuses, settings
+│   │   ├── Gate.cs               # Gate with segments; threshold gates
+│   │   ├── GateSegment.cs        # Lane range + operation
+│   │   ├── Operation.cs          # NCalc formula + label; Apply() clamps ±1B
+│   │   ├── LevelConfig.cs        # Per-level parameters (StartValue, GateCount, etc.)
+│   │   ├── BonusCard.cs          # Bonus card definition (emoji, title, effect, rarity)
+│   │   ├── RunSettings.cs        # Mutable game settings (scroll speed, multipliers, modifiers)
+│   │   └── SaveData.cs           # Persistence: BestLevel (int) + BestRating (string)
 │   ├── Spotify/              # Spotify API models (legacy)
-│   └── Game/                 # Math game models
+│   └── Game/                 # Old math game models
 ├── Services/
 │   ├── SpotifyService.cs     # Spotify API client (legacy)
-│   └── QuizService.cs        # Quiz management
+│   ├── QuizService.cs        # Quiz management
+│   └── MathWar/
+│       ├── GateGenerator.cs      # Generates gates from LevelConfig
+│       ├── ScoreCalculator.cs    # SimulateMinMax (greedy O(N×S)), GetThresholds, GetRating
+│       ├── BonusService.cs       # Bonus card pool generation
+│       ├── LevelLibrary.cs       # Static: 5 curated levels + procedural fallback
+│       └── GameLogger.cs         # In-memory log; download as .txt on game over
 ├── wwwroot/
 │   ├── js/
-│   │   ├── keyboard.js       # Global keyboard event handler
-│   │   └── download.js       # File download helper
+│   │   ├── keyboard.js       # Global keyboard event handler (checks INPUT/TEXTAREA)
+│   │   └── download.js       # File download helper (used by GameLogger)
 │   └── spotify-quizzes/      # Preset CSV quiz files
-│       ├── suomi-musaa.csv
-│       ├── hitster-suomi.csv
-│       └── Parhaat joulubiisit.csv
 ├── Program.cs                # DI configuration
 └── appsettings.json          # Configuration
 ```
@@ -215,7 +226,133 @@ MathGame.Web/
 
 ---
 
+## MathWar Game (Branch: newgame-MathWar)
+
+Roguelike arcade game. Player steers a unit through falling math gates. Each gate has segments across lanes — player picks a lane to apply that operation to their value. Level cleared if final value ≥ bronze threshold. Bonuses carry over between levels; values reset each level (fresh start from `LevelConfig.StartValue`).
+
+### Architecture
+
+**Game loop** (`MathWarPage.razor`):
+1. `StartNewGame()` → sets `_level=1`, inits `GameState`, calls `StartLevel()`
+2. `StartLevel()` → `LevelLibrary.Get(_level)` → `GateGenerator.Generate(config, level, settings)` → `ScoreCalculator.SimulateMinMax(config.StartValue, gates)` → sets thresholds → resets `_state.CurrentValue = config.StartValue` → starts `RunGameLoop()`
+3. `RunGameLoop()` — 33ms tick loop: scroll gates down, check collisions, end level when all gates passed
+4. `EndLevel()` → rate score → if ≥ bronze: `CheckHighScore` + open bonus selection → `AdvanceLevel()`
+5. `AdvanceLevel()` → `_level++`, speed `*= 1.1`, `StartLevel()`
+
+**Score**: Count of levels cleared (`_level`). High score = max `BestLevel` in `SaveData` (localStorage).
+
+**Values do NOT carry over** — each level starts from `config.StartValue` (e.g., 100, or -500 for escape levels).  
+**Bonuses DO carry over** — roguelike accumulation across entire run.
+
+### LevelConfig (`LevelConfig.cs`)
+```csharp
+public class LevelConfig {
+    public int StartValue;       // e.g. 100, -500
+    public int GateCount;        // base gate count (modified by RunSettings.GateCountModifier)
+    public int MaxSegments;      // max segments per gate (random 2..MaxSegments)
+    public bool AllowMultiply;
+    public bool AllowDivide;
+    public string? Theme;        // shown in UI header, e.g. "⚠️ Miinukselta!"
+}
+```
+
+### LevelLibrary (`LevelLibrary.cs`)
+5 curated levels + procedural fallback:
+| Level | StartValue | Gates | Ops | Theme |
+|-------|-----------|-------|-----|-------|
+| 1 | 100 | 2 | +/- only | – |
+| 2 | 100 | 3 | +/- only | – |
+| 3 | 100 | 2 | +/-/×/÷ | – |
+| 4 | 100 | 5 | full | – |
+| 5 | -500 | 5 | full | ⚠️ Miinukselta! |
+| 6+ | 100 | 5+extra | full | procedural |
+
+### GateGenerator (`GateGenerator.cs`)
+- `Generate(LevelConfig config, int gameLevel, RunSettings settings)` → `List<Gate>`
+- `GateCount = Min(config.GateCount + settings.GateCountModifier, 15)`
+- `scaleBase = Max(Abs(config.StartValue), 10)`
+- **+/- values**: scaled to 5–20% and 3–12% of `scaleBase` (proportional, not tiny flat values)
+- **× values**: ×2 only (×3/×4 removed — unbalanced)
+- **÷ values**: ÷2 only
+- Respects `config.AllowMultiply`, `config.AllowDivide`
+
+### ScoreCalculator (`ScoreCalculator.cs`)
+- `SimulateMinMax(startValue, gates)` — greedy O(N×S) algorithm (provably correct because all ops monotone-increasing). Replaced old O(S^N) exponential recursion.
+- `GetThresholds(min, max, settings)` → `(bronze, silver, gold)` based on `RunSettings.ThresholdDifficulty`
+- `GetRating(value, min, max, settings)` → `"Bronze"/"Silver"/"Gold"/"None"`
+
+### BonusService / BonusCard
+Pool of bonus cards offered after each level. Key cards:
+- **multiplier_pro** (unique): All ×ops +20% (`*=` stacking)
+- **midas** (unique): All ×ops +25% (`*=` stacking)
+- **gate_remover**: -1 gate per level
+- **extra_gate**: +1 gate (more ops = more value potential)
+- Skip option: no effect (previously gave +50 soldiers, removed)
+
+### GameLogger (`GameLogger.cs`)
+In-memory log. Auto-format `Fmt(int v)` → `1.2k`/`3.4M`/`1.1B`. Logged events:
+- Session start, level start (start value, gate count, bonuses, settings)
+- Each gate hit (before/op/after)
+- Level end (final value, rating, min/max, thresholds)
+- Bonus selected/skipped
+- Game over
+Download button on game-over screen (`📄 Lataa loki`).
+
+### FormatValue (`MathWarPage.razor`)
+Static helper, auto-detects magnitude, handles negatives:
+```csharp
+static string FormatValue(int v) {
+    int abs = Math.Abs(v);
+    string sign = v < 0 ? "−" : "";
+    if (abs >= 1_000_000_000) return $"{sign}{abs/1e9:F1}B";
+    if (abs >= 1_000_000)     return $"{sign}{abs/1e6:F1}M";
+    if (abs >= 10_000)        return $"{sign}{abs/1000}k";
+    return v.ToString();
+}
+```
+
+### SaveData (`SaveData.cs`)
+```csharp
+public class SaveData {
+    public int BestLevel { get; set; }
+    public string BestRating { get; set; } = "";
+    // Note: HighScore (long) was removed — score is now levels cleared, not value
+}
+```
+
+### Key Design Decisions
+- **No value carry-over**: Values reset → no inflation spiral, each level is fresh challenge
+- **Score = levels cleared**: Simple, comparable, shown as integer
+- **Bonuses carry over**: Roguelike progression across run (multipliers, gate count changes)
+- **NCalc for operations**: `Operation.Apply` uses `new Expression(formula)` — creates Expression per call, acceptable overhead (only called on gate collision + O(N×S) per level start)
+- **1B clamp**: `Operation.Apply` clamps ±1_000_000_000. With fresh low start values this rarely matters now.
+
+### Future Work (MathWar)
+- Level 6+: equations (e.g. `x*2-100`, NCalc already supports)
+- Themed procedural levels with named arcs
+- More bonus types (e.g. add extra ×2 segments, shield gates)
+- Sound effects
+- Keyboard shortcuts for bonus selection
+- Animation for gate collision
+- Multiple difficulty tracks
+
+---
+
 ## Recent Updates
+
+### 2026-04-19 (MathWar balance + redesign session)
+- ✅ **Fixed exponential SimulateMinMax** — replaced O(S^N) recursion with O(N×S) greedy (monotone-increasing ops proof)
+- ✅ **Fixed bonus stacking bugs** — `multiplier_pro` and `midas` now use `*=`, were `=` (overwrite bug)
+- ✅ **Added GameLogger** — in-memory log with auto-format, download button on game over
+- ✅ **Tier compression system** (interim, since superseded) — k/M/B/T suffix display
+- ✅ **+/- ops proportional scaling** — scaled to % of `scaleBase = Abs(startValue)` not flat tiny values
+- ✅ **Removed ×3/×4 base multipliers** — caused runaway spiral
+- ✅ **Full level redesign** — `LevelConfig` + `LevelLibrary` (5 curated + procedural)
+- ✅ **Fixed-start values per level** — values reset each level, no carry-over
+- ✅ **Score = levels cleared** — `SaveData.BestLevel` replaces `HighScore (long)`
+- ✅ **Level themes** — `LevelConfig.Theme` shown in game header
+- ✅ **Negative start values** — Level 5 starts at -500 ("escape theme")
+- ✅ **Skip bonus no longer grants +50** — no effect (no carry-over value to add to)
 
 ### 2025-11-29 (Evening Session)
 - ✅ **Challenge Result Dialog** - Complete overhaul of challenge results UI
@@ -367,6 +504,11 @@ builder.Services.AddScoped<QuizService>();
 builder.Services.AddScoped<SpotifyService>();
 builder.Services.AddScoped<CsvQuizParser>();
 builder.Services.AddScoped<QuizFactory>();
+// MathWar
+builder.Services.AddScoped<GateGenerator>();
+builder.Services.AddScoped<ScoreCalculator>();
+builder.Services.AddScoped<BonusService>();
+builder.Services.AddScoped<GameLogger>();
 builder.Services.AddMudServices();
 ```
 
@@ -532,4 +674,4 @@ cat MathGame.Web/appsettings.json
 
 ---
 
-**For AI Agents:** This document provides comprehensive context about the project. Always reference PLANS.md for feature status. Maintain Finnish UI text and MudBlazor design patterns. The RunQuizGame component is the most complex (~1,190 lines) - make surgical changes only. Key recent additions: ryöstö cards (challenge system), decade guessing for single-card scenarios, and artist/song guessing via checkbox in result dialog. The game now fully implements HITSTER-style gameplay mechanics.
+**For AI Agents:** This document covers both the Spotify Quiz game (fully complete, RunQuizGame.razor ~1,190 lines — make surgical changes only) and MathWar (active development, branch `newgame-MathWar`). MathWar key files: `MathWarPage.razor`, `LevelLibrary.cs`, `GateGenerator.cs`, `ScoreCalculator.cs`, `GameLogger.cs`. Maintain Finnish UI text. MathWar score = levels cleared (not value). Values reset per level, bonuses carry over. SimulateMinMax is O(N×S) greedy — do not revert to recursion.

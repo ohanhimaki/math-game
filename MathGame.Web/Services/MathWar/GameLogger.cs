@@ -16,22 +16,22 @@ public class GameLogger
         _entries.Add($"=== MathWar Session {_sessionStart:yyyy-MM-dd HH:mm:ss} UTC ===");
     }
 
-    public void LogLevelStart(int level, int startValue, int gateCount, IEnumerable<BonusCard> bonuses, RunSettings settings, string tierSuffix)
+    public void LogLevelStart(int level, int startValue, int gateCount, IEnumerable<BonusCard> bonuses, RunSettings settings)
     {
         var bonusStr = bonuses.Any() ? string.Join(", ", bonuses.Select(b => b.Title)) : "–";
-        Log($"[TASO {level} ALKU] Arvo={startValue}{tierSuffix}, Portit={gateCount}, Bonukset=[{bonusStr}], " +
+        Log($"[TASO {level} ALKU] Arvo={Fmt(startValue)}, Portit={gateCount}, Bonukset=[{bonusStr}], " +
             $"Nopeus={settings.CurrentScrollSpeed:F2}, Kertoin={settings.MultiplyMultiplier:F2}");
     }
 
-    public void LogGateHit(int level, int before, string operation, int after, string tierSuffix)
+    public void LogGateHit(int level, int before, string operation, int after)
     {
-        Log($"[TASO {level}] Portti: {before}{tierSuffix} {operation} = {after}{tierSuffix}");
+        Log($"[TASO {level}] Portti: {Fmt(before)} {operation} = {Fmt(after)}");
     }
 
     public void LogLevelEnd(int level, int finalValue, string rating, int minPossible, int maxPossible, int bronze, int silver, int gold)
     {
-        Log($"[TASO {level} LOPPU] Arvo={finalValue}, Mitali={rating}, " +
-            $"Min={minPossible}, Max={maxPossible}, Rajat=[🥉{bronze} 🥈{silver} 🥇{gold}]");
+        Log($"[TASO {level} LOPPU] Arvo={Fmt(finalValue)}, Mitali={rating}, " +
+            $"Min={Fmt(minPossible)}, Max={Fmt(maxPossible)}, Rajat=[🥉{Fmt(bronze)} 🥈{Fmt(silver)} 🥇{Fmt(gold)}]");
     }
 
     public void LogBonusSelected(int level, string bonusTitle, string bonusDescription)
@@ -46,7 +46,7 @@ public class GameLogger
 
     public void LogGameOver(int level, int finalValue, string rating)
     {
-        Log($"[PELI OHI] Taso={level}, Arvo={finalValue}, Mitali={rating}");
+        Log($"[PELI OHI] Taso={level}, Arvo={Fmt(finalValue)}, Mitali={rating}");
         _entries.Add("=== Peli päättyi ===");
     }
 
@@ -54,4 +54,14 @@ public class GameLogger
 
     private void Log(string message) =>
         _entries.Add($"[+{(DateTime.UtcNow - _sessionStart).TotalSeconds:F1}s] {message}");
+
+    private static string Fmt(int v)
+    {
+        int abs = Math.Abs(v);
+        string sign = v < 0 ? "−" : "";
+        if (abs >= 1_000_000_000) return $"{sign}{abs / 1_000_000_000.0:F1}B";
+        if (abs >= 1_000_000)     return $"{sign}{abs / 1_000_000.0:F1}M";
+        if (abs >= 10_000)        return $"{sign}{abs / 1_000}k";
+        return v.ToString();
+    }
 }

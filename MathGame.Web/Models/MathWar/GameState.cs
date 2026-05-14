@@ -16,5 +16,4 @@ public class GameState
     public bool IsInBonusSelection { get; set; }
     public List<BonusCard> BonusSelectionPool { get; set; } = new();
     public int SelectedBonusIndex { get; set; } // 0-2 cards, 3=skip
-    public int Tier { get; set; } = 0; // 0=raw, 1=k, 2=M, 3=B, 4=T
 }

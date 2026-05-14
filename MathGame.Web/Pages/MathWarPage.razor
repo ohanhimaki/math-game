@@ -18,9 +18,9 @@
             <MudText Typo="Typo.body1" Class="mb-4" Color="Color.Secondary">
                 Ohjaa armeijasi porttien läpi. Valitse operaatio siirtymällä oikealle tai vasemmalle sarakkeelle ennen porttiin osumista.
             </MudText>
-            @if (_highScore > 0)
+            @if (_bestLevel > 0)
             {
-                <MudText Typo="Typo.body2" Class="mb-4">🏆 Ennätys: kenttä <b>@_bestLevel</b>, arvo <b>@FormatLong(_highScore)</b> (@_bestRating)</MudText>
+                <MudText Typo="Typo.body2" Class="mb-4">🏆 Ennätys: kenttä <b>@_bestLevel</b> (@_bestRating)</MudText>
             }
             <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="StartNewGame">Aloita peli</MudButton>
         </MudPaper>
@@ -57,7 +57,7 @@
                         <MudText Typo="Typo.h3" Class="mb-2">⏩</MudText>
                         <MudText Typo="Typo.h6">Ohita</MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">Hyöty</MudText>
-                        <MudText Typo="Typo.body2" Class="mt-2">+50 sotilasta välittömästi</MudText>
+                        <MudText Typo="Typo.body2" Class="mt-2">Ohita bonus, ei vaikutusta</MudText>
                     </MudPaper>
                 </MudItem>
             </MudGrid>
@@ -107,7 +107,7 @@
             </MudText>
             @if (_isNewHighScore)
             {
-                <MudAlert Severity="Severity.Success" Class="mb-4">🎉 Uusi ennätys! Kenttä @_level, arvo @FormatLong(_highScore)</MudAlert>
+                <MudAlert Severity="Severity.Success" Class="mb-4">🎉 Uusi ennätys! Kenttä @_level</MudAlert>
             }
             <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartNewGame">Pelaa uudelleen</MudButton>
             <MudButton Variant="Variant.Outlined" Color="Color.Default" Class="ml-2" OnClick="GoToMenu">Valikko</MudButton>
@@ -126,6 +126,10 @@
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
                 <MudStack Spacing="0">
                     <MudText Typo="Typo.h6" Color="Color.Secondary">Kenttä @_level</MudText>
+                    @if (!string.IsNullOrEmpty(_levelTheme))
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Warning">@_levelTheme</MudText>
+                    }
                     <div style="display:flex; gap:2px;">
                         @foreach(var b in _state.CollectedBonuses) {
                             <span title="@b.Title: @b.Description">@b.Emoji</span>
@@ -202,16 +206,13 @@
     private bool _isNewHighScore;
     private int _minPossible;
     private int _maxPossible;
-    private long _highScore;
     private int _bestLevel;
     private string _bestRating = "";
     private string _levelRating = "";
     private int _bronzeThreshold;
     private int _operationalGateCount;
-
-    // Multi-level state
     private int _level = 1;
-    private int _idealStartValue = 100;
+    private string? _levelTheme;
 
     private ElementReference _gameDiv;
     private CancellationTokenSource? _cts;
@@ -221,16 +222,13 @@
 
     private double _playerLeftPct => _state.PlayerLane * _lanePct;
 
-    private static readonly string[] _tierSuffixes = ["", "k", "M", "B", "T"];
-    private string TierSuffix => _tierSuffixes[Math.Min(_state.Tier, _tierSuffixes.Length - 1)];
-    private string FormatValue(int v) => $"{v:N0}{TierSuffix}";
-    private static long TrueValue(int value, int tier) => (long)(value * Math.Pow(1000, tier));
-    private static string FormatLong(long v)
+    private static string FormatValue(int v)
     {
-        if (v >= 1_000_000_000_000L) return $"{v / 1_000_000_000_000L}T";
-        if (v >= 1_000_000_000L)     return $"{v / 1_000_000_000L}B";
-        if (v >= 1_000_000L)         return $"{v / 1_000_000L}M";
-        if (v >= 1_000L)             return $"{v / 1_000L}k";
+        int abs = Math.Abs(v);
+        string sign = v < 0 ? "−" : "";
+        if (abs >= 1_000_000_000) return $"{sign}{abs / 1_000_000_000.0:F1}B";
+        if (abs >= 1_000_000)     return $"{sign}{abs / 1_000_000.0:F1}M";
+        if (abs >= 10_000)        return $"{sign}{abs / 1_000}k";
         return v.ToString();
     }
 
@@ -242,29 +240,31 @@
     private Task StartNewGame()
     {
         _level = 1;
-        _idealStartValue = 100;
-        _state = new GameState 
-        { 
+        var config = LevelLibrary.Get(1);
+        _state = new GameState
+        {
             Settings = new RunSettings(),
-            CurrentValue = 100
+            CurrentValue = config.StartValue
         };
         GameLogger.StartSession();
-        return StartLevel(100);
+        return StartLevel();
     }
 
-    private async Task StartLevel(int actualStartValue)
+    private async Task StartLevel()
     {
+        var config = LevelLibrary.Get(_level);
+        _levelTheme = config.Theme;
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
         _isNewHighScore = false;
         _levelComplete = false;
         _state.IsInBonusSelection = false;
 
-        var operationalGates = GateGenerator.Generate(GateGenerator.GateCount(_level, _state.Settings), _level, _state.Settings, actualStartValue, TierSuffix);
+        var operationalGates = GateGenerator.Generate(config, _level, _state.Settings);
         _operationalGateCount = operationalGates.Count;
 
-        // Thresholds always based on ideal start
-        (_minPossible, _maxPossible) = ScoreCalculator.SimulateMinMax(_idealStartValue, operationalGates);
+        // Thresholds based on the level's defined start value (always consistent)
+        (_minPossible, _maxPossible) = ScoreCalculator.SimulateMinMax(config.StartValue, operationalGates);
         var (bronzeVal, silverVal, goldVal) = ScoreCalculator.GetThresholds(_minPossible, _maxPossible, _state.Settings);
         _bronzeThreshold = bronzeVal;
 
@@ -278,12 +278,12 @@
 
         _state.Gates = operationalGates.Concat(thresholdGates).ToList();
         _state.GatesCompleted = 0;
-        _state.CurrentValue = actualStartValue;
+        _state.CurrentValue = config.StartValue;  // always reset to predefined start
         _state.PlayerLane = 2;
         _state.IsGameOver = false;
 
         _started = true;
-        GameLogger.LogLevelStart(_level, actualStartValue, _operationalGateCount, _state.CollectedBonuses, _state.Settings, TierSuffix);
+        GameLogger.LogLevelStart(_level, config.StartValue, _operationalGateCount, _state.CollectedBonuses, _state.Settings);
 
         await InvokeAsync(StateHasChanged);
         await Task.Delay(100);
@@ -311,9 +311,8 @@
             _state.CollectedBonuses.Add(card);
             GameLogger.LogBonusSelected(_level, card.Title, card.Description);
         }
-        else if (index == 3) // Skip
+        else if (index == 3) // Skip — no carry-over value, skip gives nothing
         {
-            _state.CurrentValue += 50;
             GameLogger.LogBonusSkipped(_level);
         }
 
@@ -322,23 +321,9 @@
 
     private async Task AdvanceLevel()
     {
-        // Ideal start = best possible outcome from this level's ideal path
-        _idealStartValue = Math.Min(
-            ScoreCalculator.SimulateMax(_idealStartValue, _state.Gates.Where(g => !g.IsThreshold).ToList()),
-            10_000_000);
-
-        // Tier compression: if value exceeds 1M in current tier units → divide by 1000, advance tier
-        while (_state.CurrentValue >= 1_000_000 && _state.Tier < _tierSuffixes.Length - 1)
-        {
-            _state.CurrentValue /= 1000;
-            _idealStartValue /= 1000;
-            _state.Tier++;
-        }
-
         _level++;
         _state.Settings.BaseScrollSpeed *= 1.1;
-
-        await StartLevel(_state.CurrentValue);
+        await StartLevel();
     }
 
     private static Gate ThresholdGate(string emoji, int value, string bg, string border, double y) => new Gate
@@ -388,7 +373,7 @@
                 {
                     var before = _state.CurrentValue;
                     _state.CurrentValue = seg.Operation.Apply(before);
-                    GameLogger.LogGateHit(_level, before, seg.Operation.Label, _state.CurrentValue, TierSuffix);
+                    GameLogger.LogGateHit(_level, before, seg.Operation.Label, _state.CurrentValue);
                 }
                 _state.GatesCompleted++;
             }
@@ -421,12 +406,10 @@
 
     private async Task CheckHighScore()
     {
-        var trueScore = TrueValue(_state.CurrentValue, _state.Tier);
-        if (trueScore > _highScore || (trueScore == _highScore && _level > _bestLevel))
+        if (_level > _bestLevel)
         {
-            _highScore = trueScore;
-            _bestRating = _levelRating;
             _bestLevel = _level;
+            _bestRating = _levelRating;
             _isNewHighScore = true;
             await SaveHighScore();
         }
@@ -469,7 +452,6 @@
             var data = await JSRuntime.InvokeAsync<SaveData?>("mathWarLoadSave");
             if (data != null)
             {
-                _highScore = data.HighScore;
                 _bestRating = data.BestRating;
                 _bestLevel = data.BestLevel;
             }
@@ -483,7 +465,6 @@
         {
             await JSRuntime.InvokeVoidAsync("mathWarSaveSave", new SaveData
             {
-                HighScore = _highScore,
                 BestRating = _bestRating,
                 BestLevel = _bestLevel
             });
