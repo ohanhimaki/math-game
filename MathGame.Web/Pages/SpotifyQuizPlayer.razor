@@ -18,7 +18,14 @@
                 @* Valinta: Valmis lista vai oma tiedosto *@
                 <MudRadioGroup @bind-Value="_uploadModel.SourceType">
                     <MudRadio Value="@("preset")" Color="Color.Primary">Käytä valmista listaa</MudRadio>
-                    <MudRadio Value="@("upload")" Color="Color.Primary">Lataa oma CSV-tiedosto</MudRadio>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudRadio Value="@("upload")" Color="Color.Primary">Lataa oma CSV-tiedosto</MudRadio>
+                        <MudIconButton Icon="@Icons.Material.Filled.Info" 
+                                       Size="Size.Small" 
+                                       Color="Color.Default"
+                                       OnClick="@(() => _showCsvHelp = true)"
+                                       Title="Ohjeet oman CSV:n luomiseen" />
+                    </MudStack>
                 </MudRadioGroup>
                 
                 @if (_uploadModel.SourceType == "preset")
@@ -38,43 +45,69 @@
                 }
                 
                 <MudTextField @bind-Value="_uploadModel.PlayerNames" 
-                              Label="Player Names (comma separated)" 
+                              Label="Pelaajien nimet (pilkulla erotettuna)" 
                               Variant="Variant.Outlined" />
+                
+                <MudDivider Class="my-2" />
+                <MudText Typo="Typo.h6">Pelisäännöt</MudText>
+
                 <MudNumericField @bind-Value="_uploadModel.InitialCards" 
-                                 Label="Initial cards per player" 
+                                 Label="Aloituskortit per pelaaja" 
                                  Variant="Variant.Outlined" 
                                  Min="0" 
                                  Max="10" />
                 
-                <MudDivider Class="my-2" />
-                <MudText Typo="Typo.h6">Pelisäännöt</MudText>
-                
+                <MudSwitch @bind-Value="_uploadModel.UseDecadeGuessing" 
+                           Color="Color.Primary"
+                           Label="Vuosikymmen-arvaus kun 0 korttia" />
+
                 <MudSwitch @bind-Value="_uploadModel.UseRyostoCards" 
                            Color="Color.Primary"
                            Label="Käytä ryöstokortteja (jokerit)" />
                 
-                @if (_uploadModel.UseRyostoCards)
-                {
-                    <MudNumericField @bind-Value="_uploadModel.InitialRyostoCards" 
-                                     Label="Ryöstokorttien määrä alussa" 
-                                     Variant="Variant.Outlined" 
-                                     Min="0" 
-                                     Max="10" />
-                }
-                
-                <MudSwitch @bind-Value="_uploadModel.UseDecadeGuessing" 
-                           Color="Color.Primary"
-                           Label="Vuosikymmen-arvaus kun vain 1 kortti" />
+                <MudNumericField @bind-Value="_uploadModel.InitialRyostoCards" 
+                                 Label="Ryöstokorttien määrä alussa" 
+                                 Variant="Variant.Outlined" 
+                                 Min="0" 
+                                 Max="10"
+                                 Disabled="@(!_uploadModel.UseRyostoCards)" />
                 
                 <MudButton ButtonType="ButtonType.Submit" 
                            Variant="Variant.Filled" 
                            Color="Color.Primary"
                            FullWidth="true">
-                    Start Game
+                    Aloita peli
                 </MudButton>
             </MudStack>
         </EditForm>
     </MudPaper>
+
+    <MudDialog @bind-Visible="_showCsvHelp" Options="@(new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true })">
+        <TitleContent>
+            <MudText Typo="Typo.h6">Ohjeet oman CSV-tiedoston luomiseen</MudText>
+        </TitleContent>
+        <DialogContent>
+            <MudStack Spacing="3">
+                <MudText>
+                    Avaa Spotifyssa soittolista, jonka haluat käyttää. Huomio: peli käyttää kappaleiden 
+                    Spotifysta löytyvää julkaisuvuotta, joten best-of-levyt ja kokoelmat voivat aiheuttaa 
+                    ongelmia väärän vuoden takia.
+                </MudText>
+                <MudText>
+                    Exportaa soittolista CSV-muotoon täällä:
+                </MudText>
+                <MudLink Href="https://www.chosic.com/spotify-playlist-exporter/" Target="_blank">
+                    chosic.com/spotify-playlist-exporter/
+                </MudLink>
+                <MudText>
+                    Ladattu CSV-tiedosto on suoraan sopivassa muodossa tähän peliin tuotavaksi.
+                </MudText>
+            </MudStack>
+        </DialogContent>
+        <DialogActions>
+            <MudButton OnClick="@(() => _showCsvHelp = false)" Color="Color.Primary">Selvä</MudButton>
+        </DialogActions>
+    </MudDialog>
 }
 else
 {
@@ -86,6 +119,7 @@ else
     private UploadModel _uploadModel = new();
     private IBrowserFile? _file;
     private List<string> _presetQuizzes = new();
+    private bool _showCsvHelp = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -158,10 +192,10 @@ else
     public class UploadModel
     {
         public string PlayerNames { get; set; } = "Test1, Test2";
-        public int InitialCards { get; set; } = 1;
+        public int InitialCards { get; set; } = 0;
         public string SourceType { get; set; } = "preset";
         public string SelectedPreset { get; set; } = "";
-        public bool UseRyostoCards { get; set; } = true;
+        public bool UseRyostoCards { get; set; } = false;
         public int InitialRyostoCards { get; set; } = 2;
         public bool UseDecadeGuessing { get; set; } = true;
     }

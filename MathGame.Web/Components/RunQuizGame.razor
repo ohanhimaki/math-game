@@ -293,6 +293,10 @@
                 <MudText Typo="Typo.body1" Color="Color.Default" Class="mb-4" Align="Align.Center">
                     Kun sinulla ei ole kortteja, sinun täytyy arvata oikea vuosikymmen
                 </MudText>
+                <MudStack Row Justify="Justify.Center" Spacing="1" Class="mb-3">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Style="color: gray;">← →: Valitse</MudChip>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Style="color: gray;">Space: Vahvista</MudChip>
+                </MudStack>
                 <MudStack Row Spacing="3" Style="flex-wrap: wrap; justify-content: center;">
                     @foreach (var decade in decades)
                     {
@@ -781,8 +785,9 @@
     private QuizItem<T>? _lastChallengedNext = null;
     private DialogOptions _challengeResultDialogOptions = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
     
-    // Vuosikymmenvalinta (kun vain 1 kortti)
+    // Vuosikymmenvalinta (kun 0 korttia)
     private int? _selectedDecade = null;
+    private int _decadeIndex = 0;
     
     // Artisti & kappale -arvaus (checkbox vastausdialgissa)
     private bool _guessedArtistAndSong = false;
@@ -955,6 +960,43 @@
                         }
                     }
                     break;
+            }
+            return;
+        }
+        
+        // Decade guessing mode
+        var currentPlayerForDecade = Game.CurrentPlayer;
+        if (Game.UseDecadeGuessing && currentPlayerForDecade != null && CurrentItem != null
+            && !_challengeMode && currentPlayerForDecade.Cards.Count == 0)
+        {
+            var decades = Game.GetAvailableDecades();
+            if (decades.Count > 0)
+            {
+                switch (key)
+                {
+                    case "ArrowLeft":
+                        _decadeIndex = (_decadeIndex - 1 + decades.Count) % decades.Count;
+                        _selectedDecade = decades[_decadeIndex];
+                        StateHasChanged();
+                        return;
+                    case "ArrowRight":
+                        _decadeIndex = (_decadeIndex + 1) % decades.Count;
+                        _selectedDecade = decades[_decadeIndex];
+                        StateHasChanged();
+                        return;
+                    case " ":
+                    case "Enter":
+                        if (_selectedDecade.HasValue)
+                        {
+                            ConfirmDecadeGuess();
+                        }
+                        else if (decades.Count > 0)
+                        {
+                            _selectedDecade = decades[_decadeIndex];
+                            StateHasChanged();
+                        }
+                        return;
+                }
             }
             return;
         }
@@ -1335,6 +1377,9 @@
     private void SelectDecade(int decade)
     {
         _selectedDecade = decade;
+        var decades = Game.GetAvailableDecades();
+        var idx = decades.IndexOf(decade);
+        if (idx >= 0) _decadeIndex = idx;
         StateHasChanged();
     }
 
@@ -1374,6 +1419,7 @@
         CurrentItem = null;
         _answerGiven = true;
         _selectedDecade = null;
+        _decadeIndex = 0;
         StateHasChanged();
     }
 
